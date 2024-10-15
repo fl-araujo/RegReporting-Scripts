@@ -119,7 +119,7 @@ def format_currency(amount):
 # Function to write results to a text file
 def write_results_to_txt(output_file):
     with open(output_file, 'w') as f:
-        f.write(f"ANACREDIT OUTPUT VALIDATION TOOL\n\n")
+        f.write(f"ANACREDIT|OUTPUT VALIDATION TOOL\n\n")
         
         # Results for Input File 1
         f.write(f"Results from Dataset RIAD\n")
@@ -143,7 +143,7 @@ def write_results_to_txt(output_file):
 
 # Function to display results from both Input Files
 def display_results():
-    print(f"\nANACREDIT OUTPUT VALIDATION TOOL")
+    print(f"\nANACREDIT|OUTPUT VALIDATION TOOL")
     
     # Display results for counterparties (Input File 1)
     print(f"\nResults from Dataset RIAD")
