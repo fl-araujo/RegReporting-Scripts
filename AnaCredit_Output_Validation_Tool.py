@@ -118,7 +118,7 @@ def format_currency(amount):
 
 # Function to display results from both Input Files
 def display_results():
-    print(f"ANACREDIT OUTPUT VALIDATION TOOL")
+    print(f"\nANACREDIT OUTPUT VALIDATION TOOL")
     
     # Display results for counterparties (Input File 1)
     print(f"\nResults from Dataset RIAD")
@@ -140,7 +140,7 @@ def display_results():
     # Display results for CP_IDs (Input File 3)
     print(f"\nResults from Dataset T2M:BBK_ANCRDT_ENTTY_DFLT_C")
     print(f'CP_ID Count = {cp_id_count_input3}')
-    print(f"Obs: Less 1 counterparty due to TRB not having a default status")
+    print(f"Obs: Less 1 counterparty due to TRB not having a default status\n")
 
 # --- Main Logic ---
 
