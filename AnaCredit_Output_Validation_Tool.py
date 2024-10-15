@@ -112,6 +112,10 @@ def process_input_file_3(file_path):
             if cp_id:
                 cp_id_count_input3 += 1
 
+# Function to format numbers in American currency format
+def format_currency(amount):
+    return "{:,.2f}".format(amount)
+
 # Function to display results from both Input Files
 def display_results():
     print(f"ANACREDIT OUTPUT VALIDATION TOOL")
@@ -125,7 +129,7 @@ def display_results():
         if dataset_type == 'T1M:BBK_ANCRDT_FNNCL_C':
             print(f"\nResults from Dataset {dataset_type}")
             print(f"INSTRMNT_ID Count = {count['count']}")
-            print(f"Sum of OTSTNDNG_NMNL_AMNT = {count['otstndng_nml_amt_sum']}")
+            print(f"Sum of OTSTNDNG_NMNL_AMNT = {format_currency(count['otstndng_nml_amt_sum'])}")
         elif isinstance(count, set):
             print(f"\nResults from Dataset {dataset_type}")
             print(f"INSTRMNT_ID Count = {len(count)}")
