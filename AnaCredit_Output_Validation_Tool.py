@@ -144,15 +144,15 @@ def display_results():
 
 # --- Main Logic ---
 
-# Process Input File 1 (counterparties)
+# Process Input File 1 (RIAD)
 input_file_1 = 'input_files/rdac_10012345_202409_5022.xml'  # Update with the actual file path
 process_input_file_1(input_file_1)
 
-# Process Input File 2 (instrument counts for specific types)
+# Process Input File 2 (AC1M)
 input_file_2 = 'input_files/ac1m_10012345_202409_5023_1e.xml'  # Update with the actual file path
 process_input_file_2(input_file_2)
 
-# Process Input File 3 (count CP_IDs)
+# Process Input File 3 (AC2M)
 input_file_3 = 'input_files/ac2m_10012345_202409_5024_1e.xml'  # Update with the actual file path
 process_input_file_3(input_file_3)
 
