@@ -122,14 +122,14 @@ def display_results():
     
     # Display results for counterparties (Input File 1)
     print(f"\nResults from Dataset RIAD")
-    print(f'Number of Counterparties = {cp_id_count_input1}')
+    print(f'CP_ID Count = {cp_id_count_input1}')
 
     # Display results for INSTRMNT_ID counts and OTSTNDNG_NMNL_AMNT sums (Input File 2)
     for dataset_type, count in instrument_counts_input2.items():
         if dataset_type == 'T1M:BBK_ANCRDT_FNNCL_C':
             print(f"\nResults from Dataset {dataset_type}")
             print(f"INSTRMNT_ID Count = {count['count']}")
-            print(f"Sum of OTSTNDNG_NMNL_AMNT = {format_currency(count['otstndng_nml_amt_sum'])}")
+            print(f"OTSTNDNG_NMNL_AMNT = {format_currency(count['otstndng_nml_amt_sum'])}")
         elif isinstance(count, set):
             print(f"\nResults from Dataset {dataset_type}")
             print(f"INSTRMNT_ID Count = {len(count)}")
@@ -139,7 +139,7 @@ def display_results():
 
     # Display results for CP_IDs (Input File 3)
     print(f"\nResults from Dataset T2M:BBK_ANCRDT_ENTTY_DFLT_C")
-    print(f'Number of CP_IDs = {cp_id_count_input3}')
+    print(f'CP_ID Count = {cp_id_count_input3}')
 
 # --- Main Logic ---
 
