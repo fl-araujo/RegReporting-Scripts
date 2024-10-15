@@ -116,6 +116,31 @@ def process_input_file_3(file_path):
 def format_currency(amount):
     return "{:,.2f}".format(amount)
 
+# Function to write results to a text file
+def write_results_to_txt(output_file):
+    with open(output_file, 'w') as f:
+        f.write(f"ANACREDIT OUTPUT VALIDATION TOOL\n\n")
+        
+        # Results for Input File 1
+        f.write(f"Results from Dataset RIAD\n")
+        f.write(f'CP_ID Count = {cp_id_count_input1}\n')
+
+        # Results for Input File 2
+        for dataset_type, count in instrument_counts_input2.items():
+            f.write(f"\nResults from Dataset {dataset_type}\n")
+            if dataset_type == 'T1M:BBK_ANCRDT_FNNCL_C':
+                f.write(f"INSTRMNT_ID Count = {count['count']}\n")
+                f.write(f"OTSTNDNG_NMNL_AMNT = {format_currency(count['otstndng_nml_amt_sum'])}\n")
+            elif isinstance(count, set):
+                f.write(f"INSTRMNT_ID Count = {len(count)}\n")
+            else:
+                f.write(f"INSTRMNT_ID Count = {count}\n")
+
+        # Results for Input File 3
+        f.write(f"\nResults from Dataset T2M:BBK_ANCRDT_ENTTY_DFLT_C\n")
+        f.write(f'CP_ID Count = {cp_id_count_input3}\n')
+        f.write(f"Obs: Less 1 counterparty due to TRB not having a default status\n")
+
 # Function to display results from both Input Files
 def display_results():
     print(f"\nANACREDIT OUTPUT VALIDATION TOOL")
@@ -155,6 +180,10 @@ process_input_file_2(input_file_2)
 # Process Input File 3 (AC2M)
 input_file_3 = 'input_files/ac2m_10012345_202409_5024_1e.xml'  # Update with the actual file path
 process_input_file_3(input_file_3)
+
+# Write results to a text file
+output_file_path = 'output_files/AnaCredit_Validation_Results.txt'  # Set desired output file path
+write_results_to_txt(output_file_path)
 
 # Display the combined results from all files
 display_results()
