@@ -116,13 +116,18 @@ def process_input_file_3(file_path):
 def format_currency(amount):
     return "{:,.2f}".format(amount)
 
+# Get current timestamp
+from datetime import datetime
+current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 # Function to write results to a text file
 def write_results_to_txt(output_file):
     with open(output_file, 'w') as f:
-        f.write(f"ANACREDIT|OUTPUT VALIDATION TOOL\n\n")
+        f.write(f"\nTRADE REPUBLIC BANK GMBH")
+        f.write(f"\n\nAnaCredit | Output Validation Tool\n{current_time}")
         
         # Results for Input File 1
-        f.write(f"Results from Dataset RIAD\n")
+        f.write(f"\n\nResults from Dataset RIAD\n")
         f.write(f'CP_ID Count = {cp_id_count_input1}\n')
 
         # Results for Input File 2
@@ -143,7 +148,8 @@ def write_results_to_txt(output_file):
 
 # Function to display results from both Input Files
 def display_results():
-    print(f"\nANACREDIT|OUTPUT VALIDATION TOOL")
+    print(f"\nTRADE REPUBLIC BANK GMBH")
+    print(f"\nAnaCredit | Output Validation Tool\n{current_time}")
     
     # Display results for counterparties (Input File 1)
     print(f"\nResults from Dataset RIAD")
