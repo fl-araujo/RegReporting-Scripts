@@ -62,18 +62,25 @@ mcc_records, non_mcc_totals = extract_w0_data(file_path)
 def format_currency(amount):
     return "{:,.2f}".format(amount)
 
+# Get current timestamp
+from datetime import datetime
+current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 # Print summed records for PSTN items
-print("\nPAYMENT STATISTICS | OUTPUT VALIDATION TOOL:\n \nTOTALS: \n")
+print(f"\nTRADE REPUBLIC BANK GMBH")
+print(f"\nPayment Statistics | Output Validation Tool\n{current_time}")
 for pstn, totals in non_mcc_totals.items():
-    print(f"{pstn} \nUnits: {format_currency(totals['total_nmbr'])} \nAmount: {format_currency(totals['total_vl'])}\n")
+    print(f"\n{pstn} \nUnits: {format_currency(totals['total_nmbr'])} \nAmount: {format_currency(totals['total_vl'])}\n")
 
 # Now write the output to a text file
 output_file = 'output_files/PaymentStat_Output_Validation_Results.txt'
 
 with open(output_file, 'w') as file:
     # Write header
-    file.write("\nPAYMENT STATISTICS | OUTPUT VALIDATION TOOL:\n\nTOTALS:\n\n")
+    file.write(f"\nTRADE REPUBLIC BANK GMBH\n")
+    file.write(f"\nPayment Statistics | Output Validation Tool\n{current_time}")
     
     # Write summed records for PSTN items
     for pstn, totals in non_mcc_totals.items():
-        file.write(f"{pstn} \nUnits: {format_currency(totals['total_nmbr'])} \nAmount: {format_currency(totals['total_vl'])}\n\n")
+        file.write(f"\n\n{pstn} \nUnits: {format_currency(totals['total_nmbr'])} \nAmount: {format_currency(totals['total_vl'])}\n\n")
+    
