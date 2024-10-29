@@ -188,7 +188,7 @@ input_file_3 = 'input_files/ac2m_10012345_202409_5024_1e.xml'  # Update with the
 process_input_file_3(input_file_3)
 
 # Write results to a text file
-output_file_path = 'output_files/AnaCredit_Validation_Results.txt'  # Set desired output file path
+output_file_path = 'output_files/AnaCredit_Monthly_Report_Output_Validation_Results.txt'  # Set desired output file path
 write_results_to_txt(output_file_path)
 
 # Display the combined results from all files
