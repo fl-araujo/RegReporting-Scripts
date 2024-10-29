@@ -124,7 +124,7 @@ current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 def write_results_to_txt(output_file):
     with open(output_file, 'w') as f:
         f.write(f"\nTRADE REPUBLIC BANK GMBH")
-        f.write(f"\n\nAnaCredit | Output Validation Tool\n{current_time}")
+        f.write(f"\n\nAnaCredit | Monthly Report Output Validation Tool\n{current_time}")
         
         # Results for Input File 1
         f.write(f"\n\nResults from Dataset RIAD\n")
@@ -149,7 +149,7 @@ def write_results_to_txt(output_file):
 # Function to display results from both Input Files
 def display_results():
     print(f"\nTRADE REPUBLIC BANK GMBH")
-    print(f"\nAnaCredit | Output Validation Tool\n{current_time}")
+    print(f"\nAnaCredit | Monthly Report Output Validation Tool\n{current_time}")
     
     # Display results for counterparties (Input File 1)
     print(f"\nResults from Dataset RIAD")
