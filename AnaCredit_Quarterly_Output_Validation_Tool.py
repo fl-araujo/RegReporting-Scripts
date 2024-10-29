@@ -39,14 +39,14 @@ def display_and_save_results(output_file):
     print(f"\nTRADE REPUBLIC BANK GMBH")
     print(f"\nAnaCredit | Quarterly Report Validation Tool\n{current_time}")
     print(f"\nResults from Dataset T2Q:BBK_ANCRDT_ACCNTNG_C")
-    print(f"Unique INSTRMNT_ID Count = {unique_instrmnt_id_count}\n")
+    print(f"INSTRMNT_ID Count = {unique_instrmnt_id_count}\n")
 
     # Write results to file
     with open(output_file, 'w') as f:
         f.write(f"\nTRADE REPUBLIC BANK GMBH")
         f.write(f"\n\nAnaCredit | Quarterly Report Output Validation Tool\n{current_time}")
         f.write(f"\n\nResults from Dataset T2Q:BBK_ANCRDT_ACCNTNG_C\n")
-        f.write(f"Unique INSTRMNT_ID Count = {unique_instrmnt_id_count}\n")
+        f.write(f"INSTRMNT_ID Count = {unique_instrmnt_id_count}\n")
 
 # --- Main Logic ---
 
