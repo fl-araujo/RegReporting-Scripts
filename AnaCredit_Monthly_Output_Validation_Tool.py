@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 from collections import defaultdict
+from datetime import datetime
 
 # Namespace map (required to handle the XML namespaces correctly)
 namespaces = {
@@ -18,7 +19,8 @@ instrument_counts_input2 = {
     'T1M:BBK_ANCRDT_INSTRMNT_C': set(),
     'T1M:BBK_ANCRDT_FNNCL_C': {
         'count': 0,          # Counter for total INSTRMNT_IDs
-        'otstndng_nml_amt_sum': 0.0  # Sum of OTSTNDNG_NMNL_AMNT
+        'otstndng_nml_amt_sum': 0.0,  # Sum of OTSTNDNG_NMNL_AMNT
+        'accrd_intrst_sum': 0.0       # Sum of ACCRD_INTRST
     },
     'T1M:BBK_ANCRDT_ENTTY_INSTRMNT_C': 0  # Counter for total INSTRMNT_IDs
 }
@@ -44,7 +46,7 @@ def process_input_file_1(file_path):
             if cp_id:
                 cp_id_count_input1 += 1
 
-# Function to process Input File 2 (count INSTRMNT_IDs and sum OTSTNDNG_NMNL_AMNT)
+# Function to process Input File 2 (count INSTRMNT_IDs and sum amounts)
 def process_input_file_2(file_path):
     # Parse the XML file
     tree = ET.parse(file_path)
@@ -72,6 +74,7 @@ def process_input_file_2(file_path):
             for obs in dataset.findall('Obs', namespaces):
                 instrmnt_id = obs.attrib.get('INSTRMNT_ID')
                 otstndng_nml_amt = obs.attrib.get('OTSTNDNG_NMNL_AMNT')
+                accrd_intrst = obs.attrib.get('ACCRD_INTRST')
 
                 if instrmnt_id:
                     # Increment the count for total INSTRMNT_IDs
@@ -83,6 +86,14 @@ def process_input_file_2(file_path):
                         instrument_counts_input2[dataset_type]['otstndng_nml_amt_sum'] += float(otstndng_nml_amt)
                     except ValueError:
                         print(f"Warning: Invalid OTSTNDNG_NMNL_AMNT value '{otstndng_nml_amt}' encountered.")
+
+                if accrd_intrst:
+                    try:
+                        # Convert "NOT_APPL" to 0, otherwise convert to float and sum
+                        accrd_intrst_value = 0.0 if accrd_intrst == "NOT_APPL" else float(accrd_intrst)
+                        instrument_counts_input2[dataset_type]['accrd_intrst_sum'] += accrd_intrst_value
+                    except ValueError:
+                        print(f"Warning: Invalid ACCRD_INTRST value '{accrd_intrst}' encountered.")
 
         elif dataset_type == 'T1M:BBK_ANCRDT_ENTTY_INSTRMNT_C':
             for obs in dataset.findall('Obs', namespaces):
@@ -116,15 +127,11 @@ def process_input_file_3(file_path):
 def format_currency(amount):
     return "{:,.2f}".format(amount)
 
-# Get current timestamp
-from datetime import datetime
-current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
 # Function to write results to a text file
 def write_results_to_txt(output_file):
     with open(output_file, 'w') as f:
         f.write(f"\nTRADE REPUBLIC BANK GMBH")
-        f.write(f"\n\nAnaCredit | Monthly Report Output Validation Tool\n{current_time}")
+        f.write(f"\n\nAnaCredit | Monthly Report Output Validation Tool\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
         # Results for Input File 1
         f.write(f"\n\nResults from Dataset RIAD\n")
@@ -136,6 +143,7 @@ def write_results_to_txt(output_file):
             if dataset_type == 'T1M:BBK_ANCRDT_FNNCL_C':
                 f.write(f"INSTRMNT_ID Count = {count['count']}\n")
                 f.write(f"OTSTNDNG_NMNL_AMNT = {format_currency(count['otstndng_nml_amt_sum'])}\n")
+                f.write(f"ACCRD_INTRST Sum = {format_currency(count['accrd_intrst_sum'])}\n")
             elif isinstance(count, set):
                 f.write(f"INSTRMNT_ID Count = {len(count)}\n")
             else:
@@ -149,7 +157,7 @@ def write_results_to_txt(output_file):
 # Function to display results from both Input Files
 def display_results():
     print(f"\nTRADE REPUBLIC BANK GMBH")
-    print(f"\nAnaCredit | Monthly Report Output Validation Tool\n{current_time}")
+    print(f"\nAnaCredit | Monthly Report Output Validation Tool\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Display results for counterparties (Input File 1)
     print(f"\nResults from Dataset RIAD")
@@ -161,6 +169,7 @@ def display_results():
             print(f"\nResults from Dataset {dataset_type}")
             print(f"INSTRMNT_ID Count = {count['count']}")
             print(f"OTSTNDNG_NMNL_AMNT = {format_currency(count['otstndng_nml_amt_sum'])}")
+            print(f"ACCRD_INTRST = {format_currency(count['accrd_intrst_sum'])}")
         elif isinstance(count, set):
             print(f"\nResults from Dataset {dataset_type}")
             print(f"INSTRMNT_ID Count = {len(count)}")
@@ -176,15 +185,15 @@ def display_results():
 # --- Main Logic ---
 
 # Process Input File 1 (RIAD)
-input_file_1 = 'input_files/rdac_10012345_202409_5022.xml'  # Update with the actual file path
+input_file_1 = 'input_files/rdac_10012345_202411_5030.xml'  # Update with the actual file path
 process_input_file_1(input_file_1)
 
 # Process Input File 2 (AC1M)
-input_file_2 = 'input_files/ac1m_10012345_202409_5023_1e.xml'  # Update with the actual file path
+input_file_2 = 'input_files/ac1m_10012345_202411_5031_1e.xml'  # Update with the actual file path
 process_input_file_2(input_file_2)
 
 # Process Input File 3 (AC2M)
-input_file_3 = 'input_files/ac2m_10012345_202409_5024_1e.xml'  # Update with the actual file path
+input_file_3 = 'input_files/ac2m_10012345_202411_5032_1e.xml'  # Update with the actual file path
 process_input_file_3(input_file_3)
 
 # Write results to a text file
