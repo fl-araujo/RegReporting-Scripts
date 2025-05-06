@@ -1,0 +1,124 @@
+import pandas as pd
+
+def process_sheet(df, row_start, row_end, date_row, sheet_name):
+    line_item = df.iloc[row_start-1:row_end, 4].tolist()  # Column E
+    amount = df.iloc[row_start-1:row_end, 5].tolist()     # Column F
+
+    date_raw = df.iloc[date_row-1, 5]
+    if pd.isna(date_raw):
+        raise ValueError(f"Missing billing date in sheet '{sheet_name}' at row {date_row}, column F.")
+
+    try:
+        date_bil = pd.to_datetime(str(int(date_raw)), format='%Y%m%d').strftime('%d/%m/%Y')
+    except Exception as e:
+        raise ValueError(f"Invalid billing date format in sheet '{sheet_name}': {date_raw}") from e
+
+    filtered_data = {
+        'id_number': [],
+        'entity': [],
+        'line_item': [],
+        'amount': [],
+        'date_bil': []
+    }
+
+    id_counter = 1
+    for i in range(len(line_item)):
+        if pd.notna(amount[i]) and amount[i] != 0:
+            filtered_data['id_number'].append(id_counter)
+            filtered_data['entity'].append(1001)
+
+            # Process line_item for GVKIP: keep leading zeros, clean float-style values
+            if sheet_name == 'GVKIP':
+                item_val = str(line_item[i]).strip()
+                if item_val.replace('.', '', 1).isdigit():
+                    item = str(int(float(item_val))).zfill(3)
+                else:
+                    item = item_val
+                # Round amount to nearest integer for GVKIP
+                amount_value = round(amount[i]) if isinstance(amount[i], (int, float)) else amount[i]
+            else:
+                item = line_item[i]
+                amount_value = amount[i]
+
+            filtered_data['line_item'].append(item)
+
+            # Clean amount: remove .0, avoid scientific notation
+            if isinstance(amount_value, (int, float)):
+                amt_str = f"{int(amount_value)}"  # Show as integer without decimals
+            else:
+                amt_str = str(amount_value)
+
+            filtered_data['amount'].append(amt_str)
+            filtered_data['date_bil'].append(date_bil)
+            id_counter += 1
+
+    return pd.DataFrame(filtered_data)
+
+def process_saki(df, row_start, row_end, sheet_name):
+    line_item = df.iloc[row_start-1:row_end, 4].tolist()  # Column E
+    amount = df.iloc[row_start-1:row_end, 5].tolist()     # Column F
+
+    filtered_data = {
+        'id_number': [],
+        'entity': [],
+        'line_item': [],
+        'amount': [],
+        'numb': [],
+        'perc': []
+    }
+
+    id_counter = 1
+    for i in range(len(amount)):
+        if pd.notna(amount[i]) and amount[i] != 0:
+            filtered_data['id_number'].append(id_counter)
+            filtered_data['entity'].append(1001)
+            filtered_data['line_item'].append(line_item[i])
+
+            # Clean amount: remove .0, avoid scientific notation
+            if isinstance(amount[i], (int, float)):
+                amt_str = f"{int(amount[i])}"  # Show as integer without decimals
+            else:
+                amt_str = str(amount[i])
+
+            filtered_data['amount'].append(amt_str)
+            filtered_data['numb'].append(None)
+            filtered_data['perc'].append(None)
+            id_counter += 1
+
+    return pd.DataFrame(filtered_data)
+
+def process_excel(input_file, output_file):
+    with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+        # GVKI Sheet
+        try:
+            df_gvki = pd.read_excel(input_file, sheet_name='GVKI', header=None)
+            gvki_df = process_sheet(df_gvki, 5, 44, 44, sheet_name='GVKI')
+            gvki_df.to_excel(writer, sheet_name='GVKI', index=False)
+        except Exception as e:
+            print(f"Error processing GVKI: {e}")
+
+        # GVKIP Sheet
+        try:
+            df_gvkip = pd.read_excel(input_file, sheet_name='GVKIP', header=None)
+            gvkip_df = process_sheet(df_gvkip, 5, 44, 44, sheet_name='GVKIP')
+            gvkip_df.rename(columns={'date_bil': 'planning date'}, inplace=True)
+            gvkip_df.to_excel(writer, sheet_name='GVKIP', index=False)
+        except Exception as e:
+            print(f"Error processing GVKIP: {e}")
+
+        # SAKI Sheet
+        try:
+            df_saki = pd.read_excel(input_file, sheet_name='SAKI', header=None)
+            saki_df = process_saki(df_saki, 5, 65, sheet_name='SAKI')
+            saki_df.to_excel(writer, sheet_name='SAKI', index=False)
+        except Exception as e:
+            print(f"Error processing SAKI: {e}")
+
+    print(f"\n✅ Processed file saved as: {output_file}")
+
+# File paths
+input_file = 'input_files/FinaRisikoV Workbook (CRR) v.1.1. - 31.12.2024 - Submission.xlsx'
+output_file = 'output_files/Input_file_FinaRisiko.xlsx'
+
+# Run
+process_excel(input_file, output_file)
