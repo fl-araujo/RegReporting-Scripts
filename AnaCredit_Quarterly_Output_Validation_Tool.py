@@ -50,10 +50,14 @@ def display_and_save_results(output_file):
 
 # --- Main Logic ---
 
-# File path for the quarterly XML report
-input_file_path = 'input_files/ac2q_10012345_202409_5025_1e.xml'  # Update with the actual file path
-output_file_path = 'output_files/AnaCredit_Quarterly_Report_Output_Validation_Results.txt'  # Set desired output file path
+# File paths for the quarterly XML reports
+input_file_1 = 'input_files/ac2q_10012345_202503_5074_1e.xml'
+input_file_2 = 'input_files/ac2q_99004014_202503_5077_1e.xml'
+output_file_path = 'output_files/AnaCredit_Quarterly_Report_Output_Validation_Results.txt'
 
-# Process the file and display/write results
-process_quarterly_report(input_file_path)
+# Process both files
+process_quarterly_report(input_file_1)
+process_quarterly_report(input_file_2)
+
+# Display and save results
 display_and_save_results(output_file_path)
