@@ -1,0 +1,106 @@
+import xml.etree.ElementTree as ET
+import pandas as pd
+import logging
+from datetime import datetime
+import os
+
+# Setup logging
+logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
+
+# Constants
+XML_NS = {'ns': 'http://www.bundesbank.de/xmw/2003-01-01'}
+FORM_NAMES = ['GVKI', 'GVKIP', 'SAKI']
+
+def format_currency(amount):
+    try:
+        return "{:,.2f}".format(amount)
+    except:
+        return str(amount)
+
+def parse_widat_xml(file_path):
+    if not os.path.exists(file_path):
+        logging.error(f"XML file not found: {file_path}")
+        return {}
+
+    try:
+        tree = ET.parse(file_path)
+        root = tree.getroot()
+    except ET.ParseError as e:
+        logging.error(f"Error parsing XML file: {e}")
+        return {}
+
+    results = {}
+    for formular in root.findall('.//ns:FORMULAR', XML_NS):
+        name = formular.attrib.get('name')
+        if name in FORM_NAMES:
+            total = 0.0
+            for feld in formular.findall('ns:FELD', XML_NS):
+                try:
+                    total += float(feld.text)
+                except (TypeError, ValueError):
+                    continue
+            results[name] = total
+    return results
+
+def parse_excel_totals(file_path):
+    if not os.path.exists(file_path):
+        logging.error(f"Excel file not found: {file_path}")
+        return {}
+
+    results = {}
+    try:
+        for sheet_name in FORM_NAMES:
+            df = pd.read_excel(file_path, sheet_name=sheet_name)
+            values = pd.to_numeric(df.iloc[:, 3], errors='coerce')  # Column D (0-based index 3)
+            results[sheet_name] = values.sum(skipna=True)
+    except Exception as e:
+        logging.error(f"Error reading Excel file: {e}")
+    return results
+
+def generate_validation_output(xml_sums, excel_sums, output_file='output_files/WIDAT_Validation_Results.txt'):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    header = ["Form", "XML Total", "Excel Total", "Match"]
+    rows = [header]
+
+    for name in FORM_NAMES:
+        xml_val = xml_sums.get(name, 0.0)
+        excel_val = excel_sums.get(name, 0.0)
+        match = xml_val == excel_val
+        rows.append([
+            name,
+            format_currency(xml_val),
+            format_currency(excel_val),
+            "✅ True" if match else "❌ False"
+        ])
+
+    # Format output
+    col_widths = [max(len(str(row[i])) for row in rows) for i in range(4)]
+    border = "-" * (sum(col_widths) + len(col_widths) * 3 + 1)
+    output = []
+    output.append(f"\nTrade Republic Bank GmbH {timestamp}")
+    output.append("WIDAT Output File Validations")
+    output.append(border)
+    output.append(f"| {rows[0][0]:<{col_widths[0]}} | {rows[0][1]:<{col_widths[1]}} | {rows[0][2]:<{col_widths[2]}} | {rows[0][3]:<{col_widths[3]}} |")
+    output.append(border)
+
+    for row in rows[1:]:
+        output.append(f"| {row[0]:<{col_widths[0]}} | {row[1]:<{col_widths[1]}} | {row[2]:<{col_widths[2]}} | {row[3]:<{col_widths[3]}} |")
+
+    output.append(border)
+    output.append("\nExplanatory Notes:")
+    output.append("- Match is based on strict equality between the XML and Excel totals.")
+    output.append("- Ensure no rounding issues and that both files are using the same units and decimal precision.")
+
+    final_output = "\n".join(output)
+    print(final_output)
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(final_output)
+
+if __name__ == "__main__":
+    xml_file = 'input_files/WIDAT.A.5509464.20241231.120000.xml'
+    excel_file = 'input_files/Input_file_FinaRisiko.xlsx'
+
+    xml_sums = parse_widat_xml(xml_file)
+    excel_sums = parse_excel_totals(excel_file)
+    generate_validation_output(xml_sums, excel_sums)
