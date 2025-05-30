@@ -1,0 +1,95 @@
+import pandas as pd
+import logging
+from datetime import datetime
+import os
+
+# Setup logging
+logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
+
+# Constants
+CSV_FILE = "input_files/2025-05-28 4_10pm.csv"
+EXCEL_FILE = "input_files/036749_20250131_20250426_RDV_DETTAGLIO_VOCI.xlsx"
+FILTER_VALUE = '0162504'  # filter condition for Excel column F (index 5)
+OUTPUT_FILE = 'output_files/ISIN_Validation_Results.txt'
+
+def load_csv_isins(csv_file, isin_col):
+    try:
+        df = pd.read_csv(csv_file)
+        isins = df[isin_col].dropna().astype(str).str.strip().str.upper().unique()
+        return set(isins)
+    except Exception as e:
+        logging.error(f"Error loading CSV file: {e}")
+        return set()
+
+def load_excel_isins(excel_file, filter_col_index, filter_value, isin_col_index):
+    try:
+        df = pd.read_excel(excel_file, header=None)
+        df = df.drop(index=0)  # drop first row (header)
+        filtered_df = df[df[filter_col_index].astype(str).str.strip() == filter_value]
+        isins = filtered_df[isin_col_index].dropna().astype(str).str.strip().str.upper().unique()
+        return set(isins)
+    except Exception as e:
+        logging.error(f"Error loading Excel file: {e}")
+        return set()
+
+def generate_validation_report(csv_isins, excel_isins, output_file=OUTPUT_FILE):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    output = [
+        f"\nTrade Republic Bank GmbH {timestamp}",
+        "\nItaly A6 Output File Validations",
+        ""
+    ]
+
+    csv_count = len(csv_isins)
+    excel_count = len(excel_isins)
+    match = csv_isins == excel_isins
+
+    # Prepare summary table in requested style
+    header = ["Check", "Input Files", "Metoda Output Files", "Match"]
+    rows = [
+        ["1. ISIN Check", str(csv_count), str(excel_count), "✅ True" if match else "❌ False"]
+    ]
+
+    # Calculate column widths
+    col_widths = [max(len(row[i]) for row in [header] + rows) for i in range(len(header))]
+    border = "-" * (sum(col_widths) + 3 * len(col_widths) + 1)
+
+    output.append(border)
+    output.append(
+        "| " + " | ".join(f"{header[i]:<{col_widths[i]}}" for i in range(len(header))) + " |"
+    )
+    output.append(border)
+    for row in rows:
+        output.append(
+            "| " + " | ".join(f"{row[i]:<{col_widths[i]}}" for i in range(len(row))) + " |"
+        )
+    output.append(border)
+
+    # If mismatch, show ISINs in CSV but missing in Excel
+    if not match:
+        missing_in_excel = sorted(csv_isins - excel_isins)
+
+        output.append("\nISINs present in CSV but missing in Excel:")
+        if missing_in_excel:
+            for isin in missing_in_excel:
+                output.append(f"- {isin}")
+        else:
+            output.append("None")
+
+    final_output = "\n".join(output)
+    print(final_output)
+
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(final_output)
+
+if __name__ == "__main__":
+    # Column names/indexes as per your spec
+    CSV_ISIN_COL = 'REC-INIZIO-RESTO VALUE 6'
+    EXCEL_FILTER_COL_INDEX = 5  # column F (zero-based)
+    EXCEL_ISIN_COL_INDEX = 16   # column Q (zero-based)
+
+    csv_isins = load_csv_isins(CSV_FILE, CSV_ISIN_COL)
+    excel_isins = load_excel_isins(EXCEL_FILE, EXCEL_FILTER_COL_INDEX, FILTER_VALUE, EXCEL_ISIN_COL_INDEX)
+
+    generate_validation_report(csv_isins, excel_isins)
