@@ -6,33 +6,138 @@ import os
 # Setup logging
 logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
 
-# Constants
-CSV_FILE = "input_files/2025-05-28 4_10pm.csv"
-EXCEL_FILE = "input_files/036749_20250131_20250426_RDV_DETTAGLIO_VOCI.xlsx"
-FILTER_VALUE = '0162504'  # filter condition for Excel column F (index 5)
-OUTPUT_FILE = 'output_files/ISIN_Validation_Results.txt'
+# Constants for all three tables
+CSV_FILE_1 = "input_files/italy_a6_fto_0162504.csv"
+CSV_FILE_2 = "input_files/italy_a6_fto_4141051.csv"  
+CSV_FILE_3 = "input_files/italy_a6_fto_4141002.csv"   
+CSV_FILE_4 = "input_files/italy_a6_fto_4140151.csv"
+CSV_FILE_5 = "input_files/italy_a6_fto_4140153.csv"
+EXCEL_FILE = "input_files/036749_20250131_20250520_RDV_DETTAGLIO_VOCI_A6.xlsx"
 
-def load_csv_isins(csv_file, isin_col):
+OUTPUT_FILE = 'output_files/A6__Italy_Validation_Results.txt'
+
+# Table 1: 0162504
+FILTER_VALUE_1 = '162504'
+CSV1_ISIN_COL = 'REC-INIZIO-RESTO VALUE 6'
+CSV1_CUSTOMER_COL = 'REC-INIZIO-NDG-VALORE'
+CSV1_VALUE14_COL = 'REC-INIZIO-RESTO VALUE 14'
+CSV1_VALUE25_COL = 'REC-INIZIO-RESTO VALUE 25'
+
+# Table 2: 4141051
+FILTER_VALUE_2 = '4141051'
+CSV2_ISIN_COL = 'REC-INIZIO-RESTO VALUE 3'
+CSV2_CUSTOMER_COL = 'REC-INIZIO-NDG-VALORE'
+CSV2_VALUE7_COL = 'REC-INIZIO-RESTO VALUE 7'
+
+# Table 3: 4141002
+FILTER_VALUE_3 = '4141002'
+CSV3_ISIN_COL = 'REC-INIZIO-RESTO VALUE 1'
+CSV3_CUSTOMER_COL = 'REC-INIZIO-NDG-VALORE'
+CSV3_VALUE3_COL = 'REC-INIZIO-RESTO VALUE 3'
+
+# Table 4: 4140151
+FILTER_VALUE_4 = '4140151'
+CSV4_ISIN_COL = 'REC-INIZIO-RESTO VALUE 4'
+CSV4_CUSTOMER_COL = 'REC-INIZIO-NDG-VALORE'
+CSV4_VALUE10_COL = 'REC-INIZIO-RESTO VALUE 10'
+CSV4_VALUE11_COL = 'REC-INIZIO-RESTO VALUE 11'
+
+# Table 5: 4140153
+FILTER_VALUE_5 = '4140153'
+CSV5_ISIN_COL = 'REC-INIZIO-RESTO VALUE 4'
+CSV5_CUSTOMER_COL = 'REC-INIZIO-NDG-VALORE'
+CSV5_VALUE10_COL = 'REC-INIZIO-RESTO VALUE 10'
+CSV5_VALUE11_COL = 'REC-INIZIO-RESTO VALUE 11'
+
+# Excel column indexes (same for all)
+EXCEL_FILTER_COL_NAME = 'FTO' 
+EXCEL_ISIN_COL_NAME = '00032'               
+EXCEL_CUSTOMER_COL_NAME = 'COD. CLIENTE'
+
+def load_csv_data(csv_file, isin_col, customer_col, extra_value_cols):
     try:
-        df = pd.read_csv(csv_file)
-        isins = df[isin_col].dropna().astype(str).str.strip().str.upper().unique()
-        return set(isins)
+        df = pd.read_csv(csv_file, dtype=str)
+        # Normalize key columns
+        df[isin_col] = df[isin_col].str.strip().str.upper()
+        df[customer_col] = df[customer_col].str.strip().str.upper()
+        # Strip extra value columns if present
+        for col in extra_value_cols:
+            if col in df.columns:
+                df[col] = df[col].astype(str).str.strip()
+        return df
     except Exception as e:
-        logging.error(f"Error loading CSV file: {e}")
+        logging.error(f"Error loading CSV file {csv_file}: {e}")
+        return pd.DataFrame()
+
+def load_excel_column_values_by_name(excel_file, filter_col_name, filter_value, target_col_name):
+    try:
+        df = pd.read_excel(excel_file, header=0)  # load with header row
+        filtered_df = df[df[filter_col_name].astype(str).str.strip() == filter_value]
+        values = filtered_df[target_col_name].dropna().astype(str).str.strip().str.upper().unique()
+        return set(values)
+    except Exception as e:
+        logging.error(f"Error loading Excel column '{target_col_name}': {e}")
         return set()
 
-def load_excel_isins(excel_file, filter_col_index, filter_value, isin_col_index):
+def parse_amount(value):
+    if pd.isna(value):
+        return None
     try:
-        df = pd.read_excel(excel_file, header=None)
-        df = df.drop(index=0)  # drop first row (header)
-        filtered_df = df[df[filter_col_index].astype(str).str.strip() == filter_value]
-        isins = filtered_df[isin_col_index].dropna().astype(str).str.strip().str.upper().unique()
-        return set(isins)
-    except Exception as e:
-        logging.error(f"Error loading Excel file: {e}")
-        return set()
+        # Take first 15 chars, convert to float and divide by 100
+        num_str = str(value)[:15].strip()
+        num = float(num_str)
+        return num / 100
+    except Exception:
+        return None
 
-def generate_validation_report(csv_isins, excel_isins, output_file=OUTPUT_FILE):
+def format_missing(entries, key_col, csv_df, extra_cols, description):
+    lines = [f"\n{description} present in CSV but missing in Excel:"]
+    if not entries:
+        lines.append("- None")
+        return lines
+    for val in sorted(entries):
+        matching_rows = csv_df[csv_df[key_col] == val]
+        for _, row in matching_rows.iterrows():
+            extra_values = []
+            for col in extra_cols:
+                amt = parse_amount(row.get(col))
+                amt_str = f"{amt:.2f}" if amt is not None else "N/A"
+                extra_values.append(f"{col}: {amt_str}")
+            lines.append(f"- {val} | " + " | ".join(extra_values))
+    return lines
+
+def generate_validation_report_for_table(table_name, csv_isins, excel_isins, csv_customers, excel_customers, csv_df, 
+                                         csv_isin_col, csv_customer_col, extra_value_cols, output):
+    output.append(f"\nTable {table_name} Checks\n")
+
+    match_isins = csv_isins == excel_isins
+    match_customers = csv_customers == excel_customers
+
+    header = ["Check", "Input Files", "Metoda Output Files", "Match"]
+    rows = [
+        ["1. ISIN Check", str(len(csv_isins)), str(len(excel_isins)), "✅ True" if match_isins else "❌ False"],
+        ["2. Customer Check", str(len(csv_customers)), str(len(excel_customers)), "✅ True" if match_customers else "❌ False"]
+    ]
+
+    col_widths = [max(len(row[i]) for row in [header] + rows) for i in range(len(header))]
+    border = "-" * (sum(col_widths) + 3 * len(col_widths) + 1)
+
+    output.append(border)
+    output.append("| " + " | ".join(f"{header[i]:<{col_widths[i]}}" for i in range(len(header))) + " |")
+    output.append(border)
+    for row in rows:
+        output.append("| " + " | ".join(f"{row[i]:<{col_widths[i]}}" for i in range(len(row))) + " |")
+    output.append(border)
+
+    if not match_isins:
+        missing_isins = csv_isins - excel_isins
+        output.extend(format_missing(missing_isins, csv_isin_col, csv_df, extra_value_cols, "ISINs"))
+
+    if not match_customers:
+        missing_customers = csv_customers - excel_customers
+        output.extend(format_missing(missing_customers, csv_customer_col, csv_df, extra_value_cols, "Customer values"))
+
+def main():
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     output = [
         f"\nTrade Republic Bank GmbH {timestamp}",
@@ -40,56 +145,107 @@ def generate_validation_report(csv_isins, excel_isins, output_file=OUTPUT_FILE):
         ""
     ]
 
-    csv_count = len(csv_isins)
-    excel_count = len(excel_isins)
-    match = csv_isins == excel_isins
-
-    # Prepare summary table in requested style
-    header = ["Check", "Input Files", "Metoda Output Files", "Match"]
-    rows = [
-        ["1. ISIN Check", str(csv_count), str(excel_count), "✅ True" if match else "❌ False"]
-    ]
-
-    # Calculate column widths
-    col_widths = [max(len(row[i]) for row in [header] + rows) for i in range(len(header))]
-    border = "-" * (sum(col_widths) + 3 * len(col_widths) + 1)
-
-    output.append(border)
-    output.append(
-        "| " + " | ".join(f"{header[i]:<{col_widths[i]}}" for i in range(len(header))) + " |"
+    # Table 1: 0162504
+    csv_df1 = load_csv_data(CSV_FILE_1, CSV1_ISIN_COL, CSV1_CUSTOMER_COL, [CSV1_VALUE14_COL, CSV1_VALUE25_COL])
+    csv1_isins = set(csv_df1[CSV1_ISIN_COL].dropna())
+    csv1_customers = set(csv_df1[CSV1_CUSTOMER_COL].dropna())
+    excel1_isins = load_excel_column_values_by_name(EXCEL_FILE, EXCEL_FILTER_COL_NAME, FILTER_VALUE_1, EXCEL_ISIN_COL_NAME)
+    excel1_customers = load_excel_column_values_by_name(EXCEL_FILE, EXCEL_FILTER_COL_NAME, FILTER_VALUE_1, EXCEL_CUSTOMER_COL_NAME)
+    generate_validation_report_for_table(
+        FILTER_VALUE_1,
+        csv1_isins,
+        excel1_isins,
+        csv1_customers,
+        excel1_customers,
+        csv_df1,
+        CSV1_ISIN_COL,
+        CSV1_CUSTOMER_COL,
+        [CSV1_VALUE14_COL, CSV1_VALUE25_COL],
+        output
     )
-    output.append(border)
-    for row in rows:
-        output.append(
-            "| " + " | ".join(f"{row[i]:<{col_widths[i]}}" for i in range(len(row))) + " |"
-        )
-    output.append(border)
 
-    # If mismatch, show ISINs in CSV but missing in Excel
-    if not match:
-        missing_in_excel = sorted(csv_isins - excel_isins)
+    # Table 2: 4141051
+    csv_df2 = load_csv_data(CSV_FILE_2, CSV2_ISIN_COL, CSV2_CUSTOMER_COL, [CSV2_VALUE7_COL])
+    csv2_isins = set(csv_df2[CSV2_ISIN_COL].dropna())
+    csv2_customers = set(csv_df2[CSV2_CUSTOMER_COL].dropna())
+    excel2_isins = load_excel_column_values_by_name(EXCEL_FILE, EXCEL_FILTER_COL_NAME, FILTER_VALUE_2, EXCEL_ISIN_COL_NAME)
+    excel2_customers = load_excel_column_values_by_name(EXCEL_FILE, EXCEL_FILTER_COL_NAME, FILTER_VALUE_2, EXCEL_CUSTOMER_COL_NAME)
+    generate_validation_report_for_table(
+        FILTER_VALUE_2,
+        csv2_isins,
+        excel2_isins,
+        csv2_customers,
+        excel2_customers,
+        csv_df2,
+        CSV2_ISIN_COL,
+        CSV2_CUSTOMER_COL,
+        [CSV2_VALUE7_COL],
+        output
+    )
 
-        output.append("\nISINs present in CSV but missing in Excel:")
-        if missing_in_excel:
-            for isin in missing_in_excel:
-                output.append(f"- {isin}")
-        else:
-            output.append("None")
+    # Table 3: 4141002
+    csv_df3 = load_csv_data(CSV_FILE_3, CSV3_ISIN_COL, CSV3_CUSTOMER_COL, [CSV3_VALUE3_COL])
+    csv3_isins = set(csv_df3[CSV3_ISIN_COL].dropna())
+    csv3_customers = set(csv_df3[CSV3_CUSTOMER_COL].dropna())
+    excel3_isins = load_excel_column_values_by_name(EXCEL_FILE, EXCEL_FILTER_COL_NAME, FILTER_VALUE_3, EXCEL_ISIN_COL_NAME)
+    excel3_customers = load_excel_column_values_by_name(EXCEL_FILE, EXCEL_FILTER_COL_NAME, FILTER_VALUE_3, EXCEL_CUSTOMER_COL_NAME)
+    generate_validation_report_for_table(
+        FILTER_VALUE_3,
+        csv3_isins,
+        excel3_isins,
+        csv3_customers,
+        excel3_customers,
+        csv_df3,
+        CSV3_ISIN_COL,
+        CSV3_CUSTOMER_COL,
+        [CSV3_VALUE3_COL],
+        output
+    )
+
+    # Table 4: 4140151
+    csv_df4 = load_csv_data(CSV_FILE_4, CSV4_ISIN_COL, CSV4_CUSTOMER_COL, [CSV4_VALUE10_COL, CSV4_VALUE11_COL])
+    csv4_isins = set(csv_df4[CSV4_ISIN_COL].dropna())
+    csv4_customers = set(csv_df4[CSV4_CUSTOMER_COL].dropna())
+    excel4_isins = load_excel_column_values_by_name(EXCEL_FILE, EXCEL_FILTER_COL_NAME, FILTER_VALUE_4, EXCEL_ISIN_COL_NAME)
+    excel4_customers = load_excel_column_values_by_name(EXCEL_FILE, EXCEL_FILTER_COL_NAME, FILTER_VALUE_4, EXCEL_CUSTOMER_COL_NAME)
+    generate_validation_report_for_table(
+        FILTER_VALUE_4,
+        csv4_isins,
+        excel4_isins,
+        csv4_customers,
+        excel4_customers,
+        csv_df4,
+        CSV4_ISIN_COL,
+        CSV4_CUSTOMER_COL,
+        [CSV4_VALUE10_COL, CSV4_VALUE11_COL],
+        output
+    )
+    
+    # Table 5: 4140153
+    csv_df5 = load_csv_data(CSV_FILE_5, CSV5_ISIN_COL, CSV5_CUSTOMER_COL, [CSV5_VALUE10_COL, CSV5_VALUE11_COL])
+    csv5_isins = set(csv_df5[CSV5_ISIN_COL].dropna())
+    csv5_customers = set(csv_df5[CSV5_CUSTOMER_COL].dropna())
+    excel5_isins = load_excel_column_values_by_name(EXCEL_FILE, EXCEL_FILTER_COL_NAME, FILTER_VALUE_5, EXCEL_ISIN_COL_NAME)
+    excel5_customers = load_excel_column_values_by_name(EXCEL_FILE, EXCEL_FILTER_COL_NAME, FILTER_VALUE_5, EXCEL_CUSTOMER_COL_NAME)
+    generate_validation_report_for_table(
+        FILTER_VALUE_5,
+        csv5_isins,
+        excel5_isins,
+        csv5_customers,
+        excel5_customers,
+        csv_df5,
+        CSV5_ISIN_COL,
+        CSV5_CUSTOMER_COL,
+        [CSV5_VALUE10_COL, CSV5_VALUE11_COL],
+        output
+    )
 
     final_output = "\n".join(output)
     print(final_output)
 
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    with open(output_file, 'w', encoding='utf-8') as f:
+    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(final_output)
 
 if __name__ == "__main__":
-    # Column names/indexes as per your spec
-    CSV_ISIN_COL = 'REC-INIZIO-RESTO VALUE 6'
-    EXCEL_FILTER_COL_INDEX = 5  # column F (zero-based)
-    EXCEL_ISIN_COL_INDEX = 16   # column Q (zero-based)
-
-    csv_isins = load_csv_isins(CSV_FILE, CSV_ISIN_COL)
-    excel_isins = load_excel_isins(EXCEL_FILE, EXCEL_FILTER_COL_INDEX, FILTER_VALUE, EXCEL_ISIN_COL_INDEX)
-
-    generate_validation_report(csv_isins, excel_isins)
+    main()
