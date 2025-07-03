@@ -1,0 +1,165 @@
+import snowflake.connector
+import pandas as pd
+
+# Parameters
+report_dt = '2025-06-30'
+snapshot_dt = '2025-07-02'
+output_path_1 = "output_files/anacredit_input/AnaCredit_CalcsInput.xlsx"
+output_path_2 = "output_files/anacredit_input/AnaCredit_CalcsInput_DE.xlsx"
+
+# Helper function to get filtered dataframe based on start and end columns (inclusive)
+def get_filtered_df(conn, query, start_col, end_col):
+    df = pd.read_sql(query, conn)
+    start_idx = df.columns.get_loc(start_col)
+    end_idx = df.columns.get_loc(end_col)
+    return df.iloc[:, start_idx:end_idx+1]
+
+# Connect to Snowflake
+conn = snowflake.connector.connect(
+    user='francisco.araujo@traderepublic.com',
+    account='gm68377.eu-central-1',
+    database='TEAMS_PRD',
+    role='FINANCE',
+    authenticator='externalbrowser'
+)
+
+try:
+    # ------------------ FIRST OUTPUT FILE ------------------
+
+    # ax_ACCNTING
+    query_acc = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_transform.trf_snapshot__regulatory_reporting__tbl_accntng
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    ORDER BY _check__counterparty_id
+    """
+    df_acc = pd.read_sql(query_acc, conn)
+    start_col_acc = 'OBSRVD_AGNT_ID'
+    df_acc_filtered = df_acc.loc[:, start_col_acc:]
+
+    # ax_ENTTY
+    query_entty = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_transform.trf_snapshot__regulatory_reporting__tbl_entty
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    ORDER BY ENTTY_ID
+    """
+    df_entty = pd.read_sql(query_entty, conn)
+    df_entty_filtered = df_entty.loc[:, 'ENTTY_ID':]
+
+    # ax_ENTTY_DFLT
+    query_entty_dflt = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_entty_dflt_core
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    """
+    df_entty_dflt = get_filtered_df(conn, query_entty_dflt, 'ENTTY_ID', 'CSTM_3')
+
+    # ax_ENTTY_INSTRMNT
+    query_entty_instrmnt = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_transform.trf_snapshot__regulatory_reporting__tbl_entty_instrmnt
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    """
+    df_entty_instrmnt = get_filtered_df(conn, query_entty_instrmnt, 'OBSRVD_AGNT_ID', 'CSTM_3')
+
+    # ax_FNNCL
+    query_fnncl = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_fnncl_core
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    """
+    df_fnncl = get_filtered_df(conn, query_fnncl, 'OBSRVD_AGNT_ID', 'CSTM_3')
+
+    # ax_INSTRMNT
+    query_instrmnt = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_transform.trf_snapshot__regulatory_reporting__tbl_instrmnt
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    """
+    df_instrmnt = get_filtered_df(conn, query_instrmnt, 'OBSRVD_AGNT_ID', 'CSTM_3')
+
+    # ax_OBSRVD_AGNT
+    query_obsrvd_agnt = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_obsrvd_agnt
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    """
+    df_obsrvd_agnt = get_filtered_df(conn, query_obsrvd_agnt, 'RPRTNG_AGNT_ID', 'CSTM_3')
+
+    # ax_RPRTNG_AGNT
+    query_rprtng_agnt = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_rprtng_agnt
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    """
+    df_rprtng_agnt = get_filtered_df(conn, query_rprtng_agnt, 'RPRTNG_AGNT_ID', 'CSTM_3')
+
+    # Write first Excel file
+    with pd.ExcelWriter(output_path_1, engine='xlsxwriter') as writer:
+        df_acc_filtered.to_excel(writer, sheet_name='ax_ACCNTING', index=False)
+        df_entty_filtered.to_excel(writer, sheet_name='ax_ENTTY', index=False)
+        df_entty_dflt.to_excel(writer, sheet_name='ax_ENTTY_DFLT', index=False)
+        df_entty_instrmnt.to_excel(writer, sheet_name='ax_ENTTY_INSTRMNT', index=False)
+        df_fnncl.to_excel(writer, sheet_name='ax_FNNCL', index=False)
+        df_instrmnt.to_excel(writer, sheet_name='ax_INSTRMNT', index=False)
+        df_obsrvd_agnt.to_excel(writer, sheet_name='ax_OBSRVD_AGNT', index=False)
+        df_rprtng_agnt.to_excel(writer, sheet_name='ax_RPRTNG_AGNT', index=False)
+
+    print(f"First export completed successfully! File saved at {output_path_1}")
+
+    # ------------------ SECOND OUTPUT FILE ------------------
+
+    # Empty DataFrames for the null sheets
+    df_empty = pd.DataFrame()
+
+    # BBK_RIAD_HEADER and BBK_HEADER empty sheets
+    # ax_ENTTY (DE)
+    query_entty_de = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_entty_de
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    """
+    df_entty_de = get_filtered_df(conn, query_entty_de, 'RPRTNG_AGNT_ID', 'CSTM_3')
+
+    # ax_ENTTY_INSTRMNT (DE)
+    query_entty_instrmnt_de = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_entty_instrmnt_de
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    """
+    df_entty_instrmnt_de = get_filtered_df(conn, query_entty_instrmnt_de, 'RPRTNG_AGNT_ID', 'CSTM_3')
+
+    # ax_INSTRMNT (DE)
+    query_instrmnt_de = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_instrmnt_de
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    """
+    df_instrmnt_de = get_filtered_df(conn, query_instrmnt_de, 'RPRTNG_AGNT_ID', 'FV_CHNG_CR_BFR_PRCHS_VR')
+
+    # ax_ACCNTNG (DE) - same table as ax_ENTTY_DE
+    query_acc_de = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_entty_de
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    """
+    df_acc_de = get_filtered_df(conn, query_acc_de, 'RPRTNG_AGNT_ID', 'CSTM_3')
+
+    # ax_FNNCL (DE)
+    query_fnncl_de = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_fnncl_de
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}'
+    """
+    df_fnncl_de = get_filtered_df(conn, query_fnncl_de, 'RPRTNG_AGNT_ID', 'OFF_BLNC_SHT_AMNT_VR')
+
+    # Write second Excel file
+    with pd.ExcelWriter(output_path_2, engine='xlsxwriter') as writer:
+        # Add empty sheets for BBK_RIAD_HEADER and BBK_HEADER
+        df_empty.to_excel(writer, sheet_name='BBK_RIAD_HEADER', index=False)
+        df_empty.to_excel(writer, sheet_name='BBK_HEADER', index=False)
+
+        df_entty_de.to_excel(writer, sheet_name='ax_ENTTY', index=False)
+
+        # Add empty sheets for null sheets
+        df_empty.to_excel(writer, sheet_name='ax_ENTTY_PRTCTD', index=False)
+        df_empty.to_excel(writer, sheet_name='ax_ENTTY_RSK', index=False)
+        df_empty.to_excel(writer, sheet_name='ax_ENTTY_DFLT', index=False)
+
+        df_entty_instrmnt_de.to_excel(writer, sheet_name='ax_ENTTY_INSTRMNT', index=False)
+        df_instrmnt_de.to_excel(writer, sheet_name='ax_INSTRMNT', index=False)
+        df_acc_de.to_excel(writer, sheet_name='ax_ACCNTNG', index=False)
+        df_fnncl_de.to_excel(writer, sheet_name='ax_FNNCL', index=False)
+
+    print(f"Second export completed successfully! File saved at {output_path_2}")
+
+finally:
+    conn.close()
