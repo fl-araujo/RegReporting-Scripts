@@ -7,7 +7,7 @@ from tabulate import tabulate
 now_str = datetime.now().strftime("%H%M%S")  # current time as HHMMSS
 
 EXCEL_FILE_PATH = r"gromikv_reporting/input_files/GroMikV_Quarterly_Analysis_30062025.xlsx"
-OUTPUT_XML_PATH = f"gromikv_reporting/output_files/MIO.TA.5509464.20250630.{now_str}.xml"
+OUTPUT_XML_PATH = f"gromikv_reporting/output_files/MIO.A.5509464.20250630.{now_str}.xml"
 OUTPUT_REPORT_PATH = "gromikv_reporting/output_files/validation_report.txt"
 
 # Namespace constants
@@ -104,8 +104,13 @@ def create_mio_xml(excel_file_path, output_file_path):
 
     total_sums = {key: 0 for key in ['POS100', 'POS108', 'POS110', 'POS111', 'POS112', 'POS113', 'POS114']}
     distinct_pos050 = set()
+    
+    # Track length validation issues
+    pos040_length_issues = []
+    pos050_length_issues = []
+    pos051_length_issues = []
 
-    for _, row in ba_data.iterrows():
+    for idx, row in ba_data.iterrows():
         ba = ET.SubElement(meldung, "BA")
 
         # Format POS010 as 'YYYY-MM'
@@ -119,12 +124,51 @@ def create_mio_xml(excel_file_path, output_file_path):
         ET.SubElement(ba, "POS015").text = str(row.get('POS015', 'SA'))
         ET.SubElement(ba, "POS030").text = config['kreditgebernr']
 
+        # POS040 with length validation and formatting
         if pd.notna(row.get('POS040')):
-            ET.SubElement(ba, "POS040").text = str(row.get('POS040'))
+            pos040_raw = row.get('POS040')
+            # Convert to int to remove decimal, then pad with leading zeros to 8 digits
+            try:
+                pos040_val = str(int(float(pos040_raw))).zfill(8)
+            except (ValueError, TypeError):
+                pos040_val = str(pos040_raw).zfill(8)
+            
+            if len(pos040_val) != 8:
+                pos040_length_issues.append(f"Row {idx + 1}: '{pos040_val}' (length: {len(pos040_val)})")
+            ET.SubElement(ba, "POS040").text = pos040_val
 
         for field in ['POS050', 'POS051', 'POS090', 'POS091']:
             raw_val = row.get(field, '')
-            val = str(int(float(raw_val))) if field in ['POS090', 'POS091'] and pd.notna(raw_val) else str(raw_val) if pd.notna(raw_val) else ""
+            if field in ['POS090', 'POS091'] and pd.notna(raw_val):
+                val = str(int(float(raw_val)))
+            elif field == 'POS050' and pd.notna(raw_val):
+                # Handle POS050 similar to POS040 - pad with leading zeros
+                try:
+                    val = str(int(float(raw_val))).zfill(8)
+                except (ValueError, TypeError):
+                    val = str(raw_val).zfill(8) if raw_val else ""
+            elif field == 'POS051' and pd.notna(raw_val):
+                # Handle POS051 - ensure exactly 20 characters
+                val = str(raw_val)
+                if len(val) > 20:
+                    val = val[:20]  # Truncate to 20 characters
+                elif len(val) < 20:
+                    val = val.ljust(20)  # Pad with spaces to reach 20 characters
+            else:
+                val = str(raw_val) if pd.notna(raw_val) else ""
+            
+            # Skip POS051 if not populated (empty or NaN)
+            if field == 'POS051' and (not val or val == 'nan' or pd.isna(raw_val)):
+                continue
+            
+            # POS050 length validation (exactly 8 characters)
+            if field == 'POS050' and val and len(val) != 8:
+                pos050_length_issues.append(f"Row {idx + 1}: '{val}' (length: {len(val)})")
+            
+            # POS051 length validation (exactly 20 characters)
+            if field == 'POS051' and val and len(val) != 20:
+                pos051_length_issues.append(f"Row {idx + 1}: '{val}' (length: {len(val)})")
+            
             ET.SubElement(ba, field).text = val
             if field == 'POS050':
                 distinct_pos050.add(val)
@@ -134,7 +178,7 @@ def create_mio_xml(excel_file_path, output_file_path):
 
         def safe_int(val):
             try:
-                return int(float(val))
+                return round(float(val))
             except (ValueError, TypeError):
                 return 0
 
@@ -152,7 +196,8 @@ def create_mio_xml(excel_file_path, output_file_path):
 
         pos111_val = safe_int(row.get('POS111'))
         pos112_val = safe_int(row.get('POS112'))
-        if pos111_val or pos112_val:
+        # Check if POS111 or POS112 columns exist and have non-null values in the input
+        if pd.notna(row.get('POS111')) or pd.notna(row.get('POS112')):
             pos111 = ET.SubElement(pos110, "POS111", wert=str(pos111_val))
             ET.SubElement(pos111, "POS112", wert=str(pos112_val))
             total_sums['POS111'] += pos111_val
@@ -160,7 +205,8 @@ def create_mio_xml(excel_file_path, output_file_path):
 
         pos113_val = safe_int(row.get('POS113'))
         pos114_val = safe_int(row.get('POS114'))
-        if pos113_val or pos114_val:
+        # Check if POS113 or POS114 columns exist and have non-null values in the input
+        if pd.notna(row.get('POS113')) or pd.notna(row.get('POS114')):
             pos113 = ET.SubElement(pos110, "POS113", wert=str(pos113_val))
             ET.SubElement(pos113, "POS114", wert=str(pos114_val))
             total_sums['POS113'] += pos113_val
@@ -177,11 +223,13 @@ def create_mio_xml(excel_file_path, output_file_path):
     ET.SubElement(bas_pos100, "POS108", wert=str(total_sums['POS108']))
     bas_pos110 = ET.SubElement(bas_pos100, "POS110", wert=str(total_sums['POS110']))
 
-    if total_sums['POS111'] or total_sums['POS112']:
+    # Check if POS111/POS112 have any non-null values in the data
+    if any(pd.notna(row.get('POS111')) or pd.notna(row.get('POS112')) for _, row in ba_data.iterrows()):
         bas_pos111 = ET.SubElement(bas_pos110, "POS111", wert=str(total_sums['POS111']))
         ET.SubElement(bas_pos111, "POS112", wert=str(total_sums['POS112']))
 
-    if total_sums['POS113'] or total_sums['POS114']:
+    # Check if POS113/POS114 have any non-null values in the data
+    if any(pd.notna(row.get('POS113')) or pd.notna(row.get('POS114')) for _, row in ba_data.iterrows()):
         bas_pos113 = ET.SubElement(bas_pos110, "POS113", wert=str(total_sums['POS113']))
         ET.SubElement(bas_pos113, "POS114", wert=str(total_sums['POS114']))
 
@@ -194,7 +242,7 @@ def create_mio_xml(excel_file_path, output_file_path):
         f.write('<?xml version="1.0" encoding="ISO-8859-15"?>\n')
         f.write(xml_str)
 
-    return total_sums, distinct_pos050
+    return total_sums, distinct_pos050, pos040_length_issues, pos050_length_issues, pos051_length_issues
 
 
 def extract_xml_data(xml_file):
@@ -228,7 +276,7 @@ def extract_xml_data(xml_file):
     return sums, pos050_values
 
 
-def create_validation_report(excel_sums, xml_sums, excel_pos050, xml_pos050, output_file):
+def create_validation_report(excel_sums, xml_sums, excel_pos050, xml_pos050, pos040_issues, pos050_issues, pos051_issues, output_file):
     def check_mark(match: bool) -> str:
         return "✅" if match else "❌"
 
@@ -260,13 +308,43 @@ def create_validation_report(excel_sums, xml_sums, excel_pos050, xml_pos050, out
             ["Extra in XML", ", ".join(sorted(pos050_extra)) if pos050_extra else "None"]
         ]
         f.write(tabulate(pos050_table, headers=["Description", "Value"], tablefmt="grid"))
+        f.write("\n\n")
+
+        # Add length validation section
+        f.write("📏 Length Validation\n\n")
+        
+        # POS040 length validation
+        pos040_status = "✅ All POS040 values have correct length (8 characters)" if not pos040_issues else f"❌ {len(pos040_issues)} POS040 values have incorrect length"
+        f.write(f"POS040 Length Check: {pos040_status}\n")
+        if pos040_issues:
+            f.write("\nPOS040 Length Issues:\n")
+            for issue in pos040_issues:
+                f.write(f"  • {issue}\n")
+        f.write("\n")
+
+        # POS050 length validation
+        pos050_status = "✅ All POS050 values have correct length (8 characters)" if not pos050_issues else f"❌ {len(pos050_issues)} POS050 values have incorrect length"
+        f.write(f"POS050 Length Check: {pos050_status}\n")
+        if pos050_issues:
+            f.write("\nPOS050 Length Issues:\n")
+            for issue in pos050_issues:
+                f.write(f"  • {issue}\n")
+        f.write("\n")
+
+        # POS051 length validation
+        pos051_status = "✅ All POS051 values have correct length (20 characters)" if not pos051_issues else f"❌ {len(pos051_issues)} POS051 values have incorrect length"
+        f.write(f"POS051 Length Check: {pos051_status}\n")
+        if pos051_issues:
+            f.write("\nPOS051 Length Issues:\n")
+            for issue in pos051_issues:
+                f.write(f"  • {issue}\n")
         f.write("\n")
 
 
 def main():
-    excel_sums, excel_pos050 = create_mio_xml(EXCEL_FILE_PATH, OUTPUT_XML_PATH)
+    excel_sums, excel_pos050, pos040_issues, pos050_issues, pos051_issues = create_mio_xml(EXCEL_FILE_PATH, OUTPUT_XML_PATH)
     xml_sums, xml_pos050 = extract_xml_data(OUTPUT_XML_PATH)
-    create_validation_report(excel_sums, xml_sums, excel_pos050, xml_pos050, OUTPUT_REPORT_PATH)
+    create_validation_report(excel_sums, xml_sums, excel_pos050, xml_pos050, pos040_issues, pos050_issues, pos051_issues, OUTPUT_REPORT_PATH)
     
 if __name__ == "__main__":
     main()
