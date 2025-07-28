@@ -2,12 +2,13 @@ import snowflake.connector
 import pandas as pd
 
 # Parameters
-report_dt = '2025-05-31'
-snapshot_dt = '2025-07-02'
+report_dt = '2025-06-30'
+snapshot_dt = '2025-07-27'
 report_granularity = 'month'
 
-output_core = f"output_files/finstat_input/Input_Core_{report_dt}.xlsx"
-output_de = f"output_files/finstat_input/Input_DE_{report_dt}.xlsx"
+output_core = f"input_extractors/output_files/Input_Core_{report_dt}.xlsx"
+output_de = f"input_extractors/output_files/Input_DE_{report_dt}.xlsx"
+output_fin = f"input_extractors/output_files/Input_FIN_{report_dt}.xlsx"
 
 # Helper function to get filtered dataframe based on start and end columns (inclusive)
 def get_filtered_df(conn, query, start_col, end_col):
@@ -241,7 +242,7 @@ try:
     'NUMEMPLOYEESAFFILIATE',
     'BANKCODE',
     'BANKCODECHECKDIGIT'
-])
+    ])
 
     # Entity Hierarchy DE - null
     df_entity_hierarchy_de = pd.DataFrame(columns=[
@@ -306,7 +307,7 @@ try:
     'ITEM40AMOUNT',
     'INVESTMENTINPPE',
     'PERSONNELEXPENSES'
-])
+    ])
 
     # Report Data K4 Asset - null
     df_report_data_k4_asset = pd.DataFrame(columns=[
@@ -315,7 +316,7 @@ try:
     'LINE_ITEM',
     'SERIAL_NO',
     'AMOUNT'
-])
+    ])
 
     # Report Data K4 comp - null
     df_report_data_k4_comp = pd.DataFrame(columns=[
@@ -345,7 +346,7 @@ try:
     'SH_VOTING_RIGHTS',
     'AN_TURN_04',
     'NUMB_EMP_05'
-])
+    ])
 
     # Report Data K4 part - null
     df_report_data_k4_part = pd.DataFrame(columns=[
@@ -359,7 +360,7 @@ try:
     'NEW_EST_ENTERP',
     'PURCH_MERGER',
     'OVERSH_TRESH'
-])
+    ])
 
     # Report Data SAKI - null
     df_report_data_saki = pd.DataFrame(columns=[
@@ -370,7 +371,7 @@ try:
     'AMOUNT',
     'NUMB',
     'PERC'
-])
+    ])
 
     # Report Data DE - null
     df_report_data_de = pd.DataFrame(columns=[
@@ -391,7 +392,7 @@ try:
     'CUSTOM4',
     'CUSTOM5',
     'CUSTOM6'
-])
+    ])
 
     # Report Data Domestic - null
     df_report_data_domestic = pd.DataFrame(columns=[
@@ -412,7 +413,7 @@ try:
     'TOT_LAND_CODE_ALPHA2',
     'TOT_CUR_CODE',
     'TOT_LAND_CODE'
-])
+    ])
 
     # Report Data GVKI - null
     df_report_data_gvki = pd.DataFrame(columns=[
@@ -422,7 +423,7 @@ try:
     'LINE_ITEM',
     'AMOUNT',
     'DATE_BIL'
-])
+    ])
 
     # Report Data K3 Asset - null
     df_report_data_k3_asset = pd.DataFrame(columns=[
@@ -431,7 +432,7 @@ try:
     'LINE_ITEM',
     'SERIAL_NO',
     'AMOUNT'
-])
+    ])
 
     # Report Data K3 comp - null
     df_report_data_k3_comp = pd.DataFrame(columns=[
@@ -465,7 +466,7 @@ try:
     'AN_TURN_04',
     'NUMB_EMP_05',
     'CURRENCY_07'
-])
+    ])
 
     # Report Data K3 part - null
     df_report_data_k3_part = pd.DataFrame(columns=[
@@ -485,7 +486,7 @@ try:
     'BAL_SHT_TOT_04',
     'AN_TURN_05',
     'NUMB_EMP_06'
-])
+    ])
 
     # Report Data WP - null
     df_report_data_wp = pd.DataFrame(columns=[
@@ -529,7 +530,7 @@ try:
     'REP_SEC_LEND_AMT',
     'REP_SEC_BORR_AMT',
     'INT_RATE'
-])
+    ])
 
     # Report Data Z5 - null
     df_report_data_z5 = pd.DataFrame(columns=[
@@ -541,8 +542,8 @@ try:
     'CURRENCY_CODE',
     'COL_ITEM',
     'AMOUNT'
-])
-
+    ])
+    
     # Write DE Excel file
     with pd.ExcelWriter(output_de, engine='xlsxwriter') as writer:
         df_counterparty_de.to_excel(writer, sheet_name='Counterparty DE', index=False)
@@ -562,9 +563,221 @@ try:
         df_report_data_k3_part.to_excel(writer, sheet_name='Report Data K3 part', index=False)
         df_report_data_wp.to_excel(writer, sheet_name='Report Data WP', index=False)
         df_report_data_z5.to_excel(writer, sheet_name='Report Data Z5', index=False)
+    
+   # -------------- FIN INPUT ----------------
 
+    # Position FIN
+    query_position_fin = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_position_fin
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}' AND report_granularity = '{report_granularity}'
+    ORDER BY ID
+    """
+    df_position_fin = get_filtered_df(conn, query_position_fin, 'ID', 'LKUPISNONPERFORMINGCALCEXCLUSION')
+    
+    # Position Extended FIN
+    query_position_extended_fin = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_position_extended_fin
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}' AND report_granularity = '{report_granularity}'
+    ORDER BY ID
+    """
+    df_position_extended_fin = get_filtered_df(conn, query_position_extended_fin, 'ID', 'FAIRVALUEDUETOINTERESTRATERISK')
+    
+    # Counterparty FIN
+    query_counterparty_fin = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_counterparty_fin
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}' AND report_granularity = '{report_granularity}'
+    ORDER BY ID
+    """
+    df_counterparty_fin = get_filtered_df(conn, query_counterparty_fin, 'ID', 'CONTAGIONGROUPID')
+    
+    # Other Assets Liabilities FIN
+    query_other_assets_liabilities_fin = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_other_assets_liabilities_fin
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}' AND report_granularity = '{report_granularity}'
+    ORDER BY ID
+    """
+    df_other_assets_liabilities_fin = get_filtered_df(conn, query_other_assets_liabilities_fin, 'ID', 'LKUPISIRBINSTITUTIONCLASS')
+    
+    # Table Profit and Loss FIN
+    query_profit_and_loss_fin = f"""
+    SELECT * FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__tbl_profit_and_loss_fin
+    WHERE report_dt = '{report_dt}' AND snapshot_dt = '{snapshot_dt}' AND report_granularity = '{report_granularity}'
+    ORDER BY ID
+    """
+    df_profit_and_loss_fin = get_filtered_df(conn, query_profit_and_loss_fin, 'ID', 'LKUPISNONPERFORMINGCALCEXCLUSION')
+    
+    # ax_filing_indicators - null with hardcoded columns
+    df_filing_indicators = pd.DataFrame(columns=[
+    'AX_REPORT_NAME', 
+    'AX_FILLING_REFERENCE', 
+    'ENTITY_ID', 
+    'AX_NON_PERFORM_THRESHOLD'
+    ])
+    
+    # Collateral Possessed FIN - null with hardcoded columns
+    df_collateral_possessed_fin = pd.DataFrame(columns=[
+    'ID',
+    'ORGUNITID',
+    'INITIALRECOGNITIONDATE',
+    'INITIALRECOGNITIONAMOUNT',
+    'CARRYINGAMOUNT',
+    'LOANGROSSCARRYINGAMOUNT',
+    'LOANIMPAIRMENT',
+    'LOANPROVISION',
+    'LOANCREDITRISKAMOUNT',
+    'CASHCOLLECTEDAMOUNT',
+    'FINANCINGGRANTEDAMOUNT',
+    'LKUPPOSSESSIONEVENT',
+    'LKUPPOSSESSEDASSET',
+    'LKUPISNONCURRHELDFORSALE',
+    'LKUPCURRENCY',
+    'INITIALRECOGNITIONOPGAMOUNT',
+    'CARRYINGOPENINGAMOUNT',
+    'LOANGROSSCARRYINGOPENINGAMOUNT',
+    'LOANIMPAIRMENTOPENING',
+    'LOANPROVISIONOPENING',
+    'LOANCREDITRISKOPENINGAMOUNT'
+    ])
+    
+    # Entity FIN - null with hardcoded columns
+    df_entity_fin = pd.DataFrame(columns=[
+    'ID', 
+    'LKUPGAAPAPPROACH', 
+    'LKUPISACCOUNTMOVEMENTONLY', 
+    'LKUPREPORTINGLEVELTYPE',
+    'LKUPISSMALLNONCOMPLEX',
+    'LKUPISTHRESHOLDEXCEEDEDF20',
+    ])
+    
+    # Equity Change FIN - null with hardcoded columns
+    df_equity_change_fin = pd.DataFrame(columns=[
+    'ID',
+    'AMOUNT',
+    'LKUPEQUITYITEM',
+    'LKUPEQUITYMOVEMENT',
+    'LKUPINCREASEDECREASE',
+    'ORGUNITID',
+    'LKUPCURRENCY'
+    ])
+    
+    # Benefit Plan FIN - null with hardcoded columns
+    df_benefit_plan_fin = pd.DataFrame(columns=[
+    'ID',
+    'FAIRVALUEAMOUNT',
+    'LKUPBENEFITPLANINSTRUMENT',
+    'LKUPISOWNISSUED',
+    'NETASSETAMOUNT',
+    'PROVISIONOBLIGATIONAMOUNT',
+    'ASSETCEILINGAMOUNT',
+    'RIGHTTOREIMBURSEAMOUNT',
+    'PRESENTVALUEOBLIGATIONAMOUNT',
+    'ORGUNITID',
+    'LKUPCURRENCY'
+    ])
+                                       
+    # Benefit Plan Movements FIN - null with hardcoded columns
+    df_benefit_plan_movements = pd.DataFrame(columns=[
+    'ID',
+    'LKUPBENEFITMOVEMENTTYPE',
+    'LKUPINCREASEDECREASE',
+    'AMOUNT',
+    'ORGUNITID',
+    'LKUPCURRENCY'
+    ])
+                                             
+    # Report Data F40_01 - null with hardcoded columns
+    df_report_data_f_40_01 = pd.DataFrame(columns=[
+    'ENTITYID',
+    'REPORT_ID',
+    'INVESTEE',
+    'INVESTEECODETYPE',
+    'LINEITEM',
+    'COLITEM',
+    'AMOUNT',
+    'TEXTVALUE',
+    'DATEVALUE'
+    ])
+    
+    # Report Data F40_02 - null with hardcoded columns
+    df_report_data_f_40_02 = pd.DataFrame(columns=[
+    'ENTITYID',
+    'REPORT_ID',
+    'INVESTEE',
+    'INVESTEECODETYPE',
+    'SECURITY',
+    'HOLDINGCOMPANY',
+    'HOLDINGCODETYPE',
+    'LINEITEM',
+    'COLITEM',
+    'AMOUNT',
+    'TEXTVALUE'
+    ])
+    
+    # Report Data FIN - null with hardcoded columns
+    df_report_data_fin = pd.DataFrame(columns=[
+    'ENTITYID',
+    'REPORT_ID',
+    'LINEITEM',
+    'COLITEM',
+    'RESIDENCE',
+    'AMOUNT',
+    'NOMINAL_AMOUNT',
+    'COLLATERAL_AMOUNT',
+    'GUARANTEE_AMOUNT',
+    'ACCUMULATED_IMPAIRMENT',
+    'CREDIT_RISK_AMOUNT',
+    'GROSS_CARRYING_AMOUNT',
+    'WRITEOFFAMOUNT',
+    'TEXTVALUE',
+    'CNTINSTRUMENT'
+    ])
+                                      
+    # Report Data C33 - null with hardcoded columns
+    df_report_data_c33 = pd.DataFrame(columns=[
+    'ENTITYID',
+    'REPORT_ID',
+    'LINEITEM',
+    'COLITEM',
+    'RESIDENCE',
+    'EXPOSUREVALUE',
+    'GROSSCARRYINGAMOUNT',
+    'NOTINALAMOUNT',
+    'RISKWEIGHTEDEXPOSUREAMOUNT',
+    'NOMINALAMOUNT',
+    'ACCUMULATEDNEGATIVECHANGES',
+    'NONDERIVATIVECARRYINGAMOUNT',
+    'CARRYINGAMOUNT',
+    'ACCUMULATEDIMPAIRMENT',
+    'TEXTVALUE'
+    ])                                                                                                                                   
+ 
+    # Write FIN Excel file
+    with pd.ExcelWriter(output_fin, engine='xlsxwriter') as writer:
+        df_entity_fin.to_excel(writer, sheet_name='Entity FIN', index=False)
+        df_report_data_f_40_01.to_excel(writer, sheet_name='Report Data F40_01', index=False)
+        df_position_fin.to_excel(writer, sheet_name='Position FIN', index=False)
+        df_position_extended_fin.to_excel(writer, sheet_name='Position Extended FIN', index=False)
+        df_counterparty_fin.to_excel(writer, sheet_name='Counterparty FIN', index=False)
+        df_other_assets_liabilities_fin.to_excel(writer, sheet_name='Other Assets Liabilities FIN', index=False)
+        df_profit_and_loss_fin.to_excel(writer, sheet_name='Profit and Loss FIN', index=False)
+        df_filing_indicators.to_excel(writer, sheet_name='ax_filing_indicators', index=False)
+        df_collateral_possessed_fin.to_excel(writer, sheet_name='Collateral Possessed FIN', index=False)
+        df_equity_change_fin.to_excel(writer, sheet_name='Equity Change FIN', index=False)
+        df_benefit_plan_fin.to_excel(writer, sheet_name='Benefit Plan FIN', index=False)
+        df_benefit_plan_movements.to_excel(writer, sheet_name='Benefit Plan Movements FIN', index=False)
+        df_report_data_f_40_02.to_excel(writer, sheet_name='Report Data F40_02', index=False)
+        df_report_data_fin.to_excel(writer, sheet_name='Report Data FIN', index=False)
+        df_report_data_c33.to_excel(writer, sheet_name='Report Data C33', index=False)
+        
+    # Set green tab color for specified sheets
+        for green_tab in ['Entity FIN', 'Report Data F40_01']:
+            worksheet = writer.sheets.get(green_tab)
+            if worksheet:
+                worksheet.set_tab_color('00FF00')
+       
     print(f"Core input exported successfully to {output_core}")
     print(f"DE input exported successfully to {output_de}")
+    print(f"FIN input exported successfully to {output_fin}")
 
 finally:
     conn.close()
