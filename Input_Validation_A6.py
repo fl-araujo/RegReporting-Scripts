@@ -27,12 +27,12 @@ checks_0162504 = [
         FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("2. Distinct REC-INIZIO-RAPP-VALORE", f"""
+    ("2. Number of distinct customers", f"""
         SELECT COUNT(DISTINCT "REC-INIZIO-RAPP-VALORE")
         FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("3. REC-INIZIO-NDG-VALORE Length = 16", f"""
+    ("3. REC-INIZIO-NDG-VALORE length equal to 16", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE WHEN LENGTH("REC-INIZIO-NDG-VALORE") = 16 THEN 1 ELSE 0 END)
@@ -42,7 +42,7 @@ checks_0162504 = [
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
 
-    ("4. REC-INIZIO-RAPP-VALORE Length = 16", f"""
+    ("4. REC-INIZIO-RAPP-VALORE length equal to 16", f"""
         SELECT 
             CASE 
                 WHEN COUNT(*) = SUM(CASE WHEN LENGTH("REC-INIZIO-RAPP-VALORE") = 16 THEN 1 ELSE 0 END)
@@ -51,14 +51,16 @@ checks_0162504 = [
         FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("5. Customers by residence (IT/Non-IT)", f"""
-        SELECT COUNT(*) 
-        FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
-        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
-        GROUP BY "REC-INIZIO-RESTO VALUE 1"
-        ORDER BY "REC-INIZIO-RESTO VALUE 1"
+    ("5. Customers reside in Italy", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 1" = 1 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_customers_italy
+    FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("6. Counterparties reported as consumer householder (= 600)", f"""
+    ("6. Counterparties reported as consumer household", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 2" = 600 THEN 1 ELSE 0 END)
@@ -67,7 +69,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("7. Province Codes Valid", f"""
+    ("7. Valid province codes", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE 
@@ -85,11 +87,14 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),   
-    ("8. Customers country = IT (code 86)", f"""
-        SELECT COUNT(*)
-        FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
-        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
-        AND "REC-INIZIO-RESTO VALUE 4" = 86
+    ("8. Customers country code is equal to 86 (IT)", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 4" = 86 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_counterparties_600
+    FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
     ("9. NDG-VALORE = REC-INIZIO-RESTO VALUE 5", f"""
     SELECT 
@@ -102,7 +107,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("10. Portfolio management type is 0 for all records", f"""
+    ("10. Portfolio management type is equal to 0", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE 
@@ -113,7 +118,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("11. Field 00120 is equal to 3 for all records", f"""
+    ("11. Field 00120 is equal to 3", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE 
@@ -124,7 +129,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("12. Field 00125 is equal to 3 for all records", f"""
+    ("12. Field 00125 is equal to 3", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE 
@@ -135,7 +140,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("13. 00518 in (0,1,2)", f"""
+    ("13. REC-INIZIO-RESTO VALUE 11 in (0,1,2)", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 11" IN (0,1,2) THEN 1 ELSE 0 END)
@@ -167,16 +172,16 @@ checks_0162504 = [
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
     ("16. Total fair value EUR", f"""
-        SELECT SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 14", 1, 15) AS NUMERIC)) / 100 AS total_sum
+        SELECT ROUND(SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 14", 1, 15) AS NUMERIC)) / 100, 2) AS total_sum
         FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
     ("17. Total fair value CCY", f"""
-        SELECT SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 15", 1, 15) AS NUMERIC)) / 100 AS total_sum
+        SELECT ROUND(SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 15", 1, 15) AS NUMERIC)) / 100, 2) AS total_sum
         FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("18. Type of consultancy is 7 for all records", f"""
+    ("18. Type of consultancy is equal to 7", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE 
@@ -187,7 +192,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("19. Option exercise date is 0 for all records", f"""
+    ("19. Option exercise date is equal to 0", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE 
@@ -198,7 +203,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("20. Depositary code is 83 for all records", f"""
+    ("20. Depositary code is equal to 83", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE 
@@ -209,7 +214,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("21. Unique Key 05266 is null", f"""
+    ("21. Unique key is null", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE 
@@ -221,7 +226,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("22. MIFID Category is 500 for all records", f"""
+    ("22. MIFID category is equal to 500", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE 
@@ -232,7 +237,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("23. PMI CRR3 is 0 for all records", f"""
+    ("23. PMI CRR3 is equal to 0", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE 
@@ -243,7 +248,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("24. Early withdrawal % is 0 for all records", f"""
+    ("24. Early withdrawal % is equal to 0", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE 
@@ -254,7 +259,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("25. Creditor withdrawal % is 0 for all records", f"""
+    ("25. Creditor withdrawal % is equal to 0", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE 
@@ -276,7 +281,7 @@ checks_0162504 = [
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("27. Total count securities", f"""
+    ("27. Number of securities", f"""
         SELECT SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 25", 1, 15) AS NUMERIC)) AS total_count
         FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
@@ -290,97 +295,99 @@ checks_4140151 = [
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("2. Distinct REC-INIZIO-RAPP-VALORE", f"""
+    ("2. Number of distinct customers", f"""
         SELECT COUNT(DISTINCT \"REC-INIZIO-RAPP-VALORE\") AS sec_accounts
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("3. REC-INIZIO-NDG-VALORE is 16 chars", f"""
+    ("3. REC-INIZIO-NDG-VALORE length equal to 16", f"""
         SELECT CASE WHEN MIN(LENGTH(\"REC-INIZIO-NDG-VALORE\")) = 16 AND MAX(LENGTH(\"REC-INIZIO-NDG-VALORE\")) = 16 THEN 'TRUE' ELSE 'FALSE' END
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("4. REC-INIZIO-RAPP-VALORE is 16 chars", f"""
+    ("4. REC-INIZIO-RAPP-VALORE length equal to 16", f"""
         SELECT CASE WHEN MIN(LENGTH(\"REC-INIZIO-RAPP-VALORE\")) = 16 AND MAX(LENGTH(\"REC-INIZIO-RAPP-VALORE\")) = 16 THEN 'TRUE' ELSE 'FALSE' END
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("5. Residents in/out IT", f"""
-        SELECT \"REC-INIZIO-RESTO VALUE 1\", COUNT(*)
-        FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
-        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
-        GROUP BY \"REC-INIZIO-RESTO VALUE 1\"
-        ORDER BY \"REC-INIZIO-RESTO VALUE 1\"
+    ("5. Customers reside in Italy", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 1" = 1 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_customers_italy
+    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
     ("6. All ordinary customers (00028 = 0)", f"""
-    SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS has_records
+    SELECT CASE WHEN COUNT(*) > 0 THEN 'TRUE' ELSE 'FALSE' END AS has_records
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     AND "REC-INIZIO-RESTO VALUE 2" = 0;
     """),
     ("7. NDG = 00030", f"""
-    SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS indicator
+    SELECT CASE WHEN COUNT(*) > 0 THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     AND "REC-INIZIO-RESTO VALUE 3" = "REC-INIZIO-NDG-VALORE"
     """),
-   ("8. Portfolio management type is 0 for all records", f"""
-    SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS has_records
+   ("8. Portfolio management type is equal to 0", f"""
+    SELECT CASE WHEN COUNT(*) > 0 THEN 'TRUE' ELSE 'FALSE' END AS has_records
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     AND "REC-INIZIO-RESTO VALUE 5" = 0
     """),
-    ("9. Asset management type is 0 for all records", f"""
-    SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS has_records
+    ("9. Asset management type is equal to 0", f"""
+    SELECT CASE WHEN COUNT(*) > 0 THEN 'TRUE' ELSE 'FALSE' END AS has_records
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     AND "REC-INIZIO-RESTO VALUE 7" = 0
     """),
-    ("10. Quotation indicator is null (00552)", f"""
+    ("10. Quotation indicator is null", f"""
     SELECT CASE 
         WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 8" IS NULL OR TRIM("REC-INIZIO-RESTO VALUE 8") = '' THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE
+        THEN 'TRUE' ELSE 'FALSE'
     END AS all_blank_or_null
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
     ("11. Trading markets breakdown", f"""
-        SELECT \"REC-INIZIO-RESTO VALUE 9\", COUNT(*)
+        SELECT TRIM(\"REC-INIZIO-RESTO VALUE 9\"), COUNT(*)
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
-        GROUP BY \"REC-INIZIO-RESTO VALUE 9\"
-        ORDER BY \"REC-INIZIO-RESTO VALUE 9\"
+        GROUP BY TRIM(\"REC-INIZIO-RESTO VALUE 9\")
+        ORDER BY TRIM(\"REC-INIZIO-RESTO VALUE 9\")
     """),
-    ("12. Total number of orders (00698)", f"""
+    ("12. Number of orders", f"""
         SELECT SUM(CAST(SUBSTRING(\"REC-INIZIO-RESTO VALUE 10\", 1, 15) AS NUMERIC))
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("13. Total trade value (00699)", f"""
-        SELECT SUM(CAST(SUBSTRING(\"REC-INIZIO-RESTO VALUE 11\", 1, 15) AS NUMERIC)) / 100
+    ("13. Total trade value", f"""
+        SELECT ROUND(SUM(CAST(SUBSTRING(\"REC-INIZIO-RESTO VALUE 11\", 1, 15) AS NUMERIC)) / 100, 2)
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("14. Type of Delegator is 884 for all records", f"""
-    SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS indicator
+    ("14. Type of delegator is equal to 884", f"""
+    SELECT CASE WHEN COUNT(*) > 0 THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     AND "REC-INIZIO-RESTO VALUE 13" = 884
     """),
-   ("15. Distribution channel is 297 for all records", f"""
-    SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS indicator
+   ("15. Distribution channel is equal to 297", f"""
+    SELECT CASE WHEN COUNT(*) > 0 THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     AND "REC-INIZIO-RESTO VALUE 14" = 297
     """),
-    ("16. Type of consultancy is 7 for all records", f"""
-    SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS indicator
+    ("16. Type of consultancy is equal to 7", f"""
+    SELECT CASE WHEN COUNT(*) > 0 THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     AND "REC-INIZIO-RESTO VALUE 15" = 7
     """),
-    ("17. MIFID categorization is 500 for all records", f"""
-    SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS indicator
+    ("17. MIFID categorization is equal to 500", f"""
+    SELECT CASE WHEN COUNT(*) > 0 THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     AND "REC-INIZIO-RESTO VALUE 16" = 500
@@ -394,48 +401,50 @@ checks_4140153 = [
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("2. Distinct customers", f"""
+    ("2. Number of distinct customers", f"""
         SELECT COUNT(DISTINCT \"REC-INIZIO-RAPP-VALORE\")
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("3. NDG is 16 chars", f"""
+    ("3. REC-INIZIO-NDG-VALORE length equal to 16", f"""
         SELECT CASE WHEN MIN(LENGTH(\"REC-INIZIO-NDG-VALORE\")) = 16 AND MAX(LENGTH(\"REC-INIZIO-NDG-VALORE\")) = 16 THEN 'TRUE' ELSE 'FALSE' END
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("4. RAPP is 16 chars", f"""
+    ("4. REC-INIZIO-RAPP-VALORE length equal to 16", f"""
         SELECT CASE WHEN MIN(LENGTH(\"REC-INIZIO-RAPP-VALORE\")) = 16 AND MAX(LENGTH(\"REC-INIZIO-RAPP-VALORE\")) = 16 THEN 'TRUE' ELSE 'FALSE' END
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("5. Resident breakdown", f"""
-        SELECT \"REC-INIZIO-RESTO VALUE 1\", COUNT(*)
-        FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
-        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
-        GROUP BY \"REC-INIZIO-RESTO VALUE 1\"
-        ORDER BY \"REC-INIZIO-RESTO VALUE 1\"
+    ("5. Customers reside in Italy", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 1" = 1 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_customers_italy
+    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
     ("6. All ordinary customers (00028 = 0)", f"""
-    SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS indicator
+    SELECT CASE WHEN COUNT(*) > 0 THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     AND "REC-INIZIO-RESTO VALUE 2" = 0
     """),
-    ("7. NDG = 00030", f"""
-    SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS indicator
+    ("7. NDG is equal to 00030", f"""
+    SELECT CASE WHEN COUNT(*) > 0 THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     AND "REC-INIZIO-RESTO VALUE 3" = "REC-INIZIO-NDG-VALORE"
     """),
-    ("8. Portfolio management is 0 for all records", f"""
-    SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS indicator
+    ("8. Portfolio management type is equal to 0", f"""
+    SELECT CASE WHEN COUNT(*) > 0 THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     AND "REC-INIZIO-RESTO VALUE 5" = 0
     """),
-    ("9. Asset management type is 0 for all records", f"""
-    SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS indicator
+    ("9. Asset management type is equal to 0", f"""
+    SELECT CASE WHEN COUNT(*) > 0 THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     AND "REC-INIZIO-RESTO VALUE 7" = 0
@@ -446,59 +455,59 @@ checks_4140153 = [
         WHEN COUNT(*) = (SELECT COUNT(*)
                         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
                         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}') 
-        THEN TRUE
-        ELSE FALSE
+        THEN 'TRUE'
+        ELSE 'FALSE'
     END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
     WHERE ( "REC-INIZIO-RESTO VALUE 8" IS NULL OR TRIM("REC-INIZIO-RESTO VALUE 8") = '')
       AND snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
     ("11. Trading markets breakdown", f"""
-        SELECT \"REC-INIZIO-RESTO VALUE 9\", COUNT(*)
+        SELECT TRIM(\"REC-INIZIO-RESTO VALUE 9\"), COUNT(*)
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
-        GROUP BY \"REC-INIZIO-RESTO VALUE 9\"
-        ORDER BY \"REC-INIZIO-RESTO VALUE 9\"
+        GROUP BY TRIM(\"REC-INIZIO-RESTO VALUE 9\")
+        ORDER BY TRIM(\"REC-INIZIO-RESTO VALUE 9\")
     """),
-    ("12. Total orders (00698)", f"""
+    ("12. Number of orders", f"""
         SELECT SUM(CAST(SUBSTRING(\"REC-INIZIO-RESTO VALUE 10\", 1, 15) AS NUMERIC))
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("13. Total value of trades (00699)", f"""
-        SELECT SUM(CAST(SUBSTRING(\"REC-INIZIO-RESTO VALUE 11\", 1, 15) AS NUMERIC)) / 100
+    ("13. Value of trades", f"""
+        SELECT ROUND(SUM(CAST(SUBSTRING(\"REC-INIZIO-RESTO VALUE 11\", 1, 15) AS NUMERIC)) / 100, 2)
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("14. Type of Delegator is 884 for all records", f"""
+    ("14. Type of delegator is equal to 884", f"""
     SELECT CASE
         WHEN COUNT(*) > 0
              AND COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 13" = 884 THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE END AS indicator
+        THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("15. Distribution channel is 297 for all records", f"""
+    ("15. Distribution channel is equal to 297", f"""
     SELECT CASE
         WHEN COUNT(*) > 0
              AND COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 14" = 297 THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE END AS indicator
+        THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("16. Consultancy type is 7 for all records", f"""
+    ("16. Consultancy type is equal to 7", f"""
     SELECT CASE
         WHEN COUNT(*) > 0
              AND COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 15" = 7 THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE END AS indicator
+        THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("17. MIFID categorization is 500 for all records", f"""
+    ("17. MIFID categorization is equal to 500", f"""
     SELECT CASE
         WHEN COUNT(*) > 0
              AND COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 16" = 500 THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE END AS indicator
+        THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
@@ -511,45 +520,45 @@ checks_4141002 = [
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141002
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("2. Distinct REC-INIZIO-RAPP-VALORE", f"""
+    ("2. Number of distinct customers", f"""
         SELECT COUNT(DISTINCT \"REC-INIZIO-RAPP-VALORE\")
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141002
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("3. REC-INIZIO-NDG-VALORE is 16 chars", f"""
+    ("3. REC-INIZIO-NDG-VALORE length equal to 16", f"""
     SELECT CASE 
         WHEN COUNT(*) > 0 
             AND COUNT(*) = COUNT(CASE WHEN LENGTH("REC-INIZIO-NDG-VALORE") = 16 THEN 1 END) 
-        THEN TRUE 
-        ELSE FALSE 
+        THEN 'TRUE' 
+        ELSE 'FALSE' 
     END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141002
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("4. REC-INIZIO-RESTO VALUE 2 = '03' (Intermediated transactions)", f"""
+    ("4. REC-INIZIO-RESTO VALUE 2 = Intermediated transactions (03)", f"""
     SELECT COUNT(*)
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141002
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
         AND LEFT(TRIM("REC-INIZIO-RESTO VALUE 2"), 2) = '03'
     """),
-    ("5. Total number of orders (00698)", f"""
+    ("5. Number of orders", f"""
         SELECT SUM(CAST(SUBSTRING(\"REC-INIZIO-RESTO VALUE 3\", 1, 15) AS NUMERIC)) AS total_sum
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141002
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("6. Type of consultancy is 7 for all records", f"""
+    ("6. Type of consultancy is equal to 7", f"""
     SELECT CASE
         WHEN COUNT(*) > 0
              AND COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 4" = 7 THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE END AS indicator
+        THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141002
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("7. MIFID categorization is 500 for all records", f"""
+    ("7. MIFID categorization is equal to 500", f"""
     SELECT CASE
         WHEN COUNT(*) > 0
              AND COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 5" = 500 THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE END AS indicator
+        THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141002
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
@@ -562,24 +571,24 @@ checks_4141051 = [
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("2. Distinct customers", f"""
+    ("2. Number of distinct customers", f"""
         SELECT COUNT(DISTINCT \"REC-INIZIO-RAPP-VALORE\") AS cash_accounts
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("3. Only Ordinary Customers (00028 = 0)", f"""
+    ("3. Only Ordinary Customers", f"""
     SELECT CASE
         WHEN COUNT(*) > 0
              AND COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 1" = 0 THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE END AS indicator
+        THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("4. NDG matches 00030", f"""
+    ("4. NDG is equal to 00030", f"""
     SELECT CASE
         WHEN COUNT(*) > 0
              AND COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 2" = "REC-INIZIO-NDG-VALORE" THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE END AS indicator
+        THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
@@ -587,30 +596,30 @@ checks_4141051 = [
     SELECT CASE
         WHEN COUNT(*) > 0
              AND COUNT(*) = SUM(CASE WHEN LENGTH("REC-INIZIO-NDG-VALORE") = 16 THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE END AS indicator
+        THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("6. Number of purchases (RESTO VALUE 5 = 06)", f"""
+    ("6. Number of purchases", f"""
         SELECT COUNT (*)
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
         AND \"REC-INIZIO-RESTO VALUE 5\" = 06
     """),
-    ("7. Number of sales (RESTO VALUE 5 = 10)", f"""
+    ("7. Number of sales", f"""
         SELECT COUNT (*)
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
         AND \"REC-INIZIO-RESTO VALUE 5\" = 10
     """),
-    ("8. Trading markets 120, 018, or 226", f"""
+    ("8. Trading markets 018, 120 or 226", f"""
         SELECT TRIM("REC-INIZIO-RESTO VALUE 6") AS trading_market, COUNT(*)
         FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
         GROUP BY TRIM("REC-INIZIO-RESTO VALUE 6")
         ORDER BY TRIM("REC-INIZIO-RESTO VALUE 6")
     """),
-    ("9. Total trade value (00699)", f"""
+    ("9. Total trade value", f"""
     SELECT TRIM("REC-INIZIO-RESTO VALUE 6") AS group_value,
        TO_CHAR(
          SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 7", 1, 15) AS NUMERIC)) / 100,
@@ -625,7 +634,7 @@ checks_4141051 = [
     SELECT CASE
         WHEN COUNT(*) > 0
              AND COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 8" = 297 THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE END AS indicator
+        THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
@@ -633,7 +642,7 @@ checks_4141051 = [
     SELECT CASE
         WHEN COUNT(*) > 0
              AND COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 9" = 7 THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE END AS indicator
+        THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
@@ -641,7 +650,7 @@ checks_4141051 = [
     SELECT CASE
         WHEN COUNT(*) > 0
              AND COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 10" = 500 THEN 1 ELSE 0 END)
-        THEN TRUE ELSE FALSE END AS indicator
+        THEN 'TRUE' ELSE 'FALSE' END AS indicator
     FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
     WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
@@ -671,6 +680,7 @@ def format_table(rows):
 # === RUN AND COLLECT CHECKS ===
 def run_checks(label, checks):
     rows = [("Check", "Result")]
+    validation_results = []  # Store TRUE/FALSE results for summary
     for check_label, query in checks:
         cursor.execute(query)
         result = cursor.fetchall()
@@ -679,7 +689,12 @@ def run_checks(label, checks):
         else:
             value = str(result[0][0])
         rows.append((check_label, value))
-    return (label, rows)
+        
+        # Check if this is a TRUE/FALSE validation
+        if value in ['TRUE', 'FALSE']:
+            validation_results.append(value == 'TRUE')
+    
+    return (label, rows, validation_results)
 
 # === DOWNLOAD FULL TABLE FILTERED BY SNAPSHOT_DT AND REPORT_DT ===
 def download_table(table_name, output_csv_path):
@@ -696,6 +711,19 @@ def download_table(table_name, output_csv_path):
         writer = csv.writer(csvfile)
         writer.writerow(columns)
         writer.writerows(rows)
+
+# === CREATE SUMMARY TABLE ===
+def create_summary_table(results_list):
+    summary_rows = [("Check", "Result")]
+    for label, rows, validation_results in results_list:
+        # Check if all TRUE/FALSE validations passed
+        if validation_results:  # Only if there are TRUE/FALSE validations
+            all_passed = all(validation_results)
+            status = "✅" if all_passed else "❌"
+        else:
+            status = "N/A"  # No TRUE/FALSE validations found
+        summary_rows.append((label, status))
+    return summary_rows
         
 # === Run all checks ===
 
@@ -705,11 +733,22 @@ results_4140153 = run_checks("FTO 4140153", checks_4140153)
 results_4141002 = run_checks("FTO 4141002", checks_4141002)
 results_4141051 = run_checks("FTO 4141051", checks_4141051)
 
+# Create summary table
+all_results = [results_0162504, results_4140151, results_4140153, results_4141002, results_4141051]
+summary_table = create_summary_table(all_results)
 
 # === SAVE TO FILE ===
 with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
     f.write(f"Validation Report - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-    for section_title, rows in [results_0162504, results_4140151, results_4140153, results_4141002, results_4141051]:
+    
+    # Write summary table first
+    f.write("VALIDATION SUMMARY\n")
+    for line in format_table(summary_table):
+        f.write(line + "\n")
+    f.write("\n")
+    
+    # Write detailed results
+    for section_title, rows, _ in all_results:
         f.write(f"{section_title}\n")
         for line in format_table(rows):
             f.write(line + "\n")
@@ -724,7 +763,14 @@ for suffix, table in tables_to_download.items():
 
 # === PRINT TO TERMINAL ===
 print(f"\nTrade Republic Bank GmbH – {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-for section_title, rows in [results_0162504, results_4140151, results_4140153, results_4141002, results_4141051]:
+
+# Print summary table first
+print(f"\nVALIDATION SUMMARY")
+for line in format_table(summary_table):
+    print(line)
+
+# Print detailed results
+for section_title, rows, _ in all_results:
     print(f"\n{section_title}")
     for line in format_table(rows):
         print(line)
