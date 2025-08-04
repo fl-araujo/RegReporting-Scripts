@@ -2,8 +2,8 @@ import snowflake.connector
 import pandas as pd
 
 # Parameters
-report_dt = '2025-06-30'
-snapshot_dt = '2025-07-27'
+report_dt = '2025-07-31'
+snapshot_dt = '2025-08-03'
 report_granularity = 'month'
 
 output_core = f"input_extractors/output_files/Input_Core_{report_dt}.xlsx"
@@ -37,7 +37,61 @@ try:
     # -------------- CORE INPUT ----------------
 
     # Client_static - null sheet (empty)
-    df_client_static = pd.DataFrame()
+    client_static_data = {
+        'Reporting Entity': [1001] * 59,
+        'Report Reference': ['BISTA', 'DOMESTIC', 'D_R11', 'D_R12', 'D_R11B', 'D_R12B', 'D_R21', 'D_R22', 'D_FW', 'D_UR', 'DOMESTIC_D_FW_D_UR', 'VJKRE', 'BRANCHES', 'SUBSIDIARIES', 'A1', 'A2', 'A3', 'B1', 'B3', 'B4', 'B6', 'B7', 'BA', 'C1', 'C2', 'C3', 'C4', 'C5', 'D1', 'D2', 'E1', 'E1B', 'E2', 'E2B', 'E3', 'E3B', 'E4', 'E5', 'F1', 'F2', 'HV', 'H', 'I1', 'I2', 'L1', 'L2', 'M1', 'M2', 'O1', 'O2', 'P1', 'Q1', 'S1', 'V1', 'V2', 'V3', 'V4', 'VA', 'VB'],
+        'Check digit for message number for sender': [3] * 59,
+        'Firm Reference Number, Sender (ABSENDER - IDENTNR)': [100123457] * 59,
+        'Entity Number, Creator (ERSTELLER - IDENTNR)': [100123457] * 59,
+        'Reporting Firm Number, Reporter (MELDER - IDENTNR)': [100123457] * 59,
+        'Firm Reference Number (Bank Code), Sender (ABSENDER: FIRMENNR or BLZ or RZNR)': [100123457] * 59,
+        'Entity Number, Creator (ERSTELLER: FIRMENNR or BLZ or RZNR)': [100123457] * 59,
+        'Number to identify the enterprise required to report, Reporter (MELDER: FIRMENNR or BLZ or RZNR)': [100123457] * 59,
+        'Bank Identifier Code, BLZ (9 digits, incl, check digit), (MELDER  - IDENTNR), WP': [100123457] * 59,
+        'Firm ID number for submission': [100123457] * 59,
+        'Firm Name, Sender (ABSENDER - NAME), WP': ['Trade Republic Bank GmbH'] * 59,
+        'Distinguishes between test and production data (stufe: Produktion,Test)': ['Produktion'] * 59,
+        'Bereich (area) field for DatabaseRef page (bereich: Statistik)': ['Statistik'] * 59,
+        'Counter for repeated submissions (dateireferenz: 0-99)': [''] * 59,
+        'Result of a plausibility check run by reporter/sender (Nein, Fehler, Erfuellt)': [''] * 59,
+        'Distinction between forms and assigned valuation  correction forms (normal or Bewkorr)': ['', '', 'Normal', 'Normal', 'Bewkorr', 'Bewkorr', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Bewkorr', 'Normal', 'Bewkorr', 'Normal', 'Bewkorr', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        'Indicates whether data on the form have already been reported and are to be corrected (ja, nein)': [''] * 59,
+        'Information on the unit of the form field entry (Anzahl, Prozent, Waehrung, Relation, Datum, JaNein)': [''] * 59,
+        'ISO code of the currency in which field entries are given': ['EUR'] * 59,
+        'Address of enterprise required to report, Reporter (MELDER: STRASSE or POSTFACH), WP': ['STRASSE'] * 59,
+        'Contact Title, Sender (ABSENDER - ANREDE), WP': ['Herr'] * 59,
+        'First name of contact person, Reporter (MELDER - VORNAME), WP': ['Aleksandar'] * 59,
+        'Last name of contact person, Reporter (MELDER - ZUNAME), WP': ['Stojchevski'] * 59,
+        'Contact Phone no, Reporter (MELDER - TELEFON), WP': ['015751017771'] * 59,
+        'Fax number, Reporter (MELDER - FAX), WP': [''] * 59,
+        'E-mail address, Reporter (MELDER - EMAIL), WP': ['aleksandar.stojchevski@traderepublic.com'] * 59,
+        'User name for Bundesbank\'s extranet, Reporter (MELDER - EXTRANET-ID), WP': ['EXN2P16I'] * 59,
+        'Comment (KOMMENTAR)': [''] * 59,
+        'Comment, Reporter (MELDUNG - KOMMENTAR)': [''] * 59,
+        'Comment, (MELDUNG - FORMULAR - KOMMENTAR)': [''] * 59,
+        'Regional Office': [''] * 59,
+        'Category of bank': [''] * 59,
+        'Legal form of reporting party (RECHTSFORM)': [''] * 59,
+        'Signature': [''] * 59,
+        'Local Number': [''] * 59,
+        'Check Name': [''] * 59,
+        'Banking Group, Sender (ABSENDER - IDENTNR: BLZ, KAGNR, RZLZ), WP': [''] * 59,
+        'LCB area': [''] * 59,
+        'Financial institution': [''] * 59,
+        'Registration number': [''] * 59,
+        'Payment Service Providers (PSPs)': [''] * 59,
+        'E-money institution': [''] * 59,
+        'Quantity factor for numerical field entries': [''] * 59,
+        'Transaction type': [''] * 59,
+        'Buchwaehrung field for DatabaseRef page (ISO currency code (ISO 4217))': ['EUR'] * 59,
+        'Typ field for DatabaseRef page (MELDUNG - typ: AUSFI: BSS_Elec_sub - Filiale or Gesamt , AUSTA: DOMESTIC - Inland,  BRANCHES - Filiale, SUBSIDIARIES - Tochter)': ['', 'Inland', 'Inland', 'Inland', 'Inland', 'Inland', 'Inland', 'Inland', 'Inland', 'Inland', 'Inland'] + [''] * 48,
+        'Marker for "field content reported in Euro" (meldewaehrungEuro: ja, nein)': ['ja'] * 59,
+        'Melder name for WP report': [''] * 59,
+        'Type of reporting institution, Cross_Form_Validation': [''] * 59,
+        'Meldungsref': [''] * 59
+    }
+    
+    df_client_static = pd.DataFrame(client_static_data)
 
     # Position
     query_position = f"""
@@ -115,10 +169,35 @@ try:
     ])
 
     # FX Rates - null sheet (empty)
-    df_fx_rates = pd.DataFrame()
+    fx_rates_data = {
+        'LKUPFROMCURRENCY': ['JPY', 'SEK', 'MXN', 'BRL', 'IDR', 'CZK', 'NZD', 'TRY', 'CHF', 'RON', 'MYR', 'BGN', 'NOK',	'ZAR', 'HUF', 'ISK', 'HKD', 'CAD', 'USD', 'INR', 'ILS', 'AUD', 'DKK', 'GBP', 'PLN', 'CNY', 'THB', 'PHP', 'SGD', 'KRW', 'TWD', 'RUB', 'COP', 'CLP', 'ARS', 'MAD', 'PEN', 'KZT', 'BMD', 'PGK', 'ANG', 'EUR'],
+        'LKUPTOCURRENCY': ['EUR'] * 42,
+        'LKUPTOCURRENCY': [1] * 42,
+        'CUSTOM1': [''] * 42,
+        'CUSTOM2': [''] * 42,
+        'CUSTOM3': [''] * 42,
+        'RATEAVGBOE': [''] * 42,
+        'RATEAVGYTD': [1] * 42,
+        'RATEAVGQTD': [''] * 42
+    }
+    
+    df_fx_rates = pd.DataFrame(fx_rates_data)
 
-    # Entity Hierarchy - null sheet (empty)
-    df_entity_hierarchy = pd.DataFrame()
+    # Entity Hierarchy - hard coded data
+    entity_hierarchy_data = {
+        'ID': ['1001', '1002', '1098', '1101', '5', '1001133', '1001134', '10803007_1'],
+        'NAME': ['Trade Republic Bank','Trade Republic Service','Trade Republic Hurdle Verwaltungs UG','Trade Republic Custody','Trade Republic Hurdle 2 UG & CO KG','YouCo B22-H131 Vorrats-AG','Youco B23-H395 Vorrats-GmbH','TR III GmbH'],
+        'ENTITY_ID': [1001] * 8,
+        'LKUP_TRADING_BOOK': ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no'],
+        'LKUP_RESIDENCE':['DEU', 'DEU', 'DEU', 'AUT', 'DEU', 'DEU', 'DEU', 'DEU'],
+        'LKUP_LOCAL_CURRENCY': ['EUR'] * 8,
+        'LKUP_RELATIONSHIP': ['na', 'associate', 'associate', 'associate', 'associate', 'associate', 'associate', 'associate'],
+        'CUSTOM1': [''] * 8,
+        'CUSTOM2': [''] * 8,
+        'CUSTOM3': [''] * 8
+    }
+    
+    df_entity_hierarchy = pd.DataFrame(entity_hierarchy_data)
 
     # Instrument
     query_instrument = f"""
@@ -139,8 +218,23 @@ try:
     'AMOUNT'
     ])
 
-    # Entity - null sheet (empty)
-    df_entity = pd.DataFrame()
+    # Entity - hard coded data
+    entity_data = {
+        'ID': ['1001', '1001_solo', '1001_conso', '1098', '1101', '1002', '5', '1001133', '1001134', '10803007_1'],
+        'NAME': ['Trade Republic Bank', 'Trade Republic Bank Solo', 'Trade Republic Bank Group','Trade Republic Hurdle Verwaltungs UG','Trade Republic Custody','Trade Republic Service','Trade Republic Hurdle 2 UG & CO KG','YouCo B22-H131 Vorrats-AG','Youco B23-H395 Vorrats-GmbH','Trade Republic Business III GmbH'],
+        'LKUP_RESIDENCE':['DEU','DEU', 'DEU', 'DEU', 'AUT', 'DEU', 'DEU', 'DEU', 'DEU','DEU'],
+        'LKUP_NATIONALITY':['DEU', 'DEU','DEU', 'DEU', 'AUT', 'DEU', 'DEU', 'DEU', 'DEU','DEU'],
+        'LKUP_REP_CURRENCY': ['EUR'] * 10,
+        'LKUP_LOCAL_CURRENCY': ['EUR'] * 10,
+        'NUM_EMPLOYEES': [''] * 10,
+        'NUM_EMPLOYEES_TOTAL': [''] * 10,
+        'CUSTOM1': [''] * 10,
+        'CUSTOM2': [''] * 10,
+        'CUSTOM3': [''] * 10,
+        'START_DATE_FINANCIAL_YEAR': ['01-Oct-2022'] * 10,
+    }
+    
+    df_entity = pd.DataFrame(entity_data)
 
     # Facility - null with hardcoded columns
     df_facility = pd.DataFrame(columns=[
@@ -191,11 +285,6 @@ try:
         df_position_movements.to_excel(writer, sheet_name='Position Movements', index=False)
 
         workbook = writer.book
-        # Set green tab color for specified sheets
-        for green_tab in ['Client_static', 'FX Rates', 'Entity Hierarchy', 'Entity']:
-            worksheet = writer.sheets.get(green_tab)
-            if worksheet:
-                worksheet.set_tab_color('00FF00')
 
     # -------------- DE INPUT ----------------
 
@@ -640,14 +729,16 @@ try:
     ])
     
     # Entity FIN - null with hardcoded columns
-    df_entity_fin = pd.DataFrame(columns=[
-    'ID', 
-    'LKUPGAAPAPPROACH', 
-    'LKUPISACCOUNTMOVEMENTONLY', 
-    'LKUPREPORTINGLEVELTYPE',
-    'LKUPISSMALLNONCOMPLEX',
-    'LKUPISTHRESHOLDEXCEEDEDF20',
-    ])
+    entity_fin_data = {
+        'ID': ['1001', '1001_solo', '1001_conso'],
+        'LKUPISACCOUNTMOVEMENTONLY':['nGAAP'] * 3,
+        'LKUPREPORTINGLEVELTYPE':['na'] * 3,
+        'LKUPREPORTINGLEVELTYPE': ['individual', 'individual', 'consolidated'],
+        'LKUPISSMALLNONCOMPLEX': ['yes'] * 3,
+        'LKUPISTHRESHOLDEXCEEDEDF20': ['yes'] * 3,
+    }
+    
+    df_entity_fin = pd.DataFrame(entity_fin_data)
     
     # Equity Change FIN - null with hardcoded columns
     df_equity_change_fin = pd.DataFrame(columns=[
@@ -697,6 +788,20 @@ try:
     'TEXTVALUE',
     'DATEVALUE'
     ])
+    
+    report_data_f_40_01 = {
+        'ENTITYID' : ['1001', '1098', '1101', '1002', '5', '1001133', '1001134'],
+        'REPORT_ID' : ['F40_01'] * 7,
+        'INVESTEE' : ['Trade Republic Bank','Trade Republic Hurdle Verwaltungs UG','Trade Republic Custody','Trade Republic Service','Trade Republic Hurdle 2 UG & CO KG','YouCo B22-H131 Vorrats-AG','Youco B23-H395 Vorrats-GmbH'],
+        'INVESTEECODETYPE' : [''] * 7,
+        'LINEITEM' : [''] * 7,
+        'COLITEM' : [''] * 7,
+        'AMOUNT' : ['', 3000, 35000, 125000, '', 50000, 25000],
+        'TEXTVALUE' : [''] * 7,
+        'DATEVALUE' : [''] * 7
+    }
+    
+    df_report_data_f_40_01 = pd.DataFrame(report_data_f_40_01)
     
     # Report Data F40_02 - null with hardcoded columns
     df_report_data_f_40_02 = pd.DataFrame(columns=[
@@ -768,12 +873,6 @@ try:
         df_report_data_f_40_02.to_excel(writer, sheet_name='Report Data F40_02', index=False)
         df_report_data_fin.to_excel(writer, sheet_name='Report Data FIN', index=False)
         df_report_data_c33.to_excel(writer, sheet_name='Report Data C33', index=False)
-        
-    # Set green tab color for specified sheets
-        for green_tab in ['Entity FIN', 'Report Data F40_01']:
-            worksheet = writer.sheets.get(green_tab)
-            if worksheet:
-                worksheet.set_tab_color('00FF00')
        
     print(f"Core input exported successfully to {output_core}")
     print(f"DE input exported successfully to {output_de}")
