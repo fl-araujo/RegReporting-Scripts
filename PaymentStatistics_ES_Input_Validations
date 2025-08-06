@@ -1,0 +1,541 @@
+WITH params AS (
+    SELECT 
+        DATE '2025-06-30' AS report_dt, 
+        DATE '2025-07-30' AS snapshot_dt
+)
+
+-- Begin validations
+SELECT * FROM (
+
+    -- Check number of rows
+    SELECT 
+        '01 - GENERAL CHECKS - 01.01. Check number of rows' AS validation_check,
+        COUNT(*)::TEXT AS result
+from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      
+UNION ALL
+
+-- Check that ENTIDAD is always 'W0322893I' which refers to TRBs CIF
+SELECT 
+    '01 - GENERAL CHECKS - 01.02. Check that ENTIDAD is always W0322893I which refers to TRBs CIF' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                   AND ENTIDAD = 'W0322893I'
+                )
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+-- Check that reporting period is not null
+SELECT 
+    '01 - GENERAL CHECKS - 01.03. Check that reporting period is not null' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                WHERE report_dt = (SELECT report_dt FROM params)
+                 AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                AND PERIODO is not null
+                )
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+-- Check that Table (Cuadro) is always '9'
+SELECT 
+    '01 - GENERAL CHECKS - 01.04. Check that Table (Cuadro) is always "9"' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND cuadro is not null
+    AND cuadro = 9
+                )
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+UNION ALL
+
+-- Check that GEO is populated and within the expected values
+SELECT 
+    '01 - GENERAL CHECKS - 01.05. Check that GEO is populated and within the expected values' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND geo is not null
+      and geo in ('AD','AE','AF','AG','AI','AL','AM','AO','AQ','AR','AS','AT','AU','AW','AZ','BA','BB','BD','BE','BF','BG','BH','BI','BJ','BM','BN','BO','BQ','BR','BS','BT','BV','BW','BY','BZ','CA','CC','CD','CF','CG','CH','CI','CK','CL','CM','CN','CO','CR','CU','CV','CW','CX','CY','CZ','DE','DJ','DK','DM','DO','DZ','EC','EE','EG','EH','ER','ES','ET','FI','FJ','FK','FM','FO','FR','GA','GB','GD','GE','GG','GH','GI','GL','GM','GN','GQ','GR','GS','GT','GU','GW','GY','HK','HM','HN','HR','HT','HU','ID','IE','IL','IM','IN','IO','IQ','IR','IS','IT','JE','JM','JO','JP','KE','KG','KH','KI','KM','KN','KP','KR','KW','KY','KZ','LA','LB','LC','LI','LK','LR','LS','LT','LU','LV','LY','MA','MD','ME','MG','MH','MK','ML','MM','MN','MO','MP','MR','MS','MT','MU','MV','MW','MX','MY','MZ','NA','NC','NE','NF','NG','NI','NL','NO','NP','NR','NU','NZ','OM','PA','PE','PF','PG','PH','PK','PL','PN','PS','PT','PW','PY','QA','RO','RS','RU','RW','SA','SB','SC','SD','SE','SG','SH','SI','SJ','SK','SL','SM','SN','SO','SR','SS','ST','SV','SX','SY','SZ','TC','TD','TF','TG','TH','TJ','TK','TL','TM','TN','TO','TR','TT','TV','TW','TZ','UA','UG','UM','US','UY','UZ','VA','VC','VE','VG','VI','VN','VU','WF','WS','YE','ZA','ZM','ZW','ZZ')
+                )
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+-- Check that Período is always '202506'
+SELECT 
+    '01 - GENERAL CHECKS - 01.06. Check that Período is always 202506' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND periodo is not null
+    AND periodo = '202506'
+                )
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+    UNION ALL
+
+-- Checks on Transfers
+
+--- Check total rows with transfers
+    SELECT 
+        '02 - TRANSFERS - 02.01. Check total rows with transfers',
+        COUNT(*)::TEXT AS result
+from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND "Epigrafe" in (21,212,2123)
+
+UNION ALL
+
+--- Check total number of outcoming transfers (epigraph 21)
+    SELECT 
+        '02 - TRANSFERS - 02.02. Check total number of outcoming transfers (epigraph 21)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 21
+
+UNION ALL
+
+--- Check total number of outcoming transfers (epigraph 212)
+    SELECT 
+        '02 - TRANSFERS - 02.03. Check total number of outcoming transfers (epigraph 212)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 212
+
+UNION ALL
+
+--- Check total number of outcoming transfers (epigraph 2123)
+    SELECT 
+        '02 - TRANSFERS - 02.04. Check total number of outcoming transfers (epigraph 2123)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 2123
+
+UNION ALL
+
+--- Check total amount of outcoming transfers (epigraph 21)
+    SELECT 
+        '02 - TRANSFERS - 02.05. Check total amount of outcoming transfers (epigraph 21)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 21
+
+UNION ALL
+
+--- Check total amount of outcoming transfers (epigraph 212)
+    SELECT 
+        '02 - TRANSFERS - 02.06. Check total amount of outcoming transfers (epigraph 212)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 212
+
+UNION ALL
+
+--- Check total amount of outcoming transfers (epigraph 2123)
+    SELECT 
+        '02 - TRANSFERS - 02.07. Check total amount of outcoming transfers (epigraph 2123)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 2123
+
+    UNION ALL
+
+--- 06.09. Check that 06.03, 06.04 and 06.05 are the same
+SELECT
+    '02 - TRANSFERS - 02.08. Check that 06.03, 06.04 and 06.05 are the same (total number of transfers is the same accross epigraphs)' AS validation_check,
+    (
+        CASE 
+            WHEN SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" ELSE 0 END) =
+                 SUM(CASE WHEN "Epigrafe" = 212 THEN "Numero de operaciones/Volumen" ELSE 0 END)
+             AND
+                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" ELSE 0 END) =
+                 SUM(CASE WHEN "Epigrafe" = 2123 THEN "Numero de operaciones/Volumen" ELSE 0 END)
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+WHERE report_dt = (SELECT report_dt FROM params)
+  AND snapshot_dt = (SELECT snapshot_dt FROM params)
+  AND "Epigrafe" IN (21,212,2123)
+
+    UNION ALL
+
+--- 06.10. Check that 06.06, 06.07 and 06.08 are the same
+SELECT
+    '02 - TRANSFERS - 02.09. Check that 06.06, 06.07 and 06.08 are the same (total amount of transfers is the same accross epigraphs)' AS validation_check,
+    (
+        CASE 
+            WHEN SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" ELSE 0 END) =
+                 SUM(CASE WHEN "Epigrafe" = 212 THEN "Importe" ELSE 0 END)
+             AND
+                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" ELSE 0 END) =
+                 SUM(CASE WHEN "Epigrafe" = 2123 THEN "Importe" ELSE 0 END)
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+WHERE report_dt = (SELECT report_dt FROM params)
+  AND snapshot_dt = (SELECT snapshot_dt FROM params)
+  AND "Epigrafe" IN (21,212,2123)
+
+UNION ALL
+
+-- Checks on Direct Debits
+
+--- Check total rows with direct debits
+    SELECT 
+        '03 - DIRECT DEBITS - 03.01. Check total rows with direct debits',
+        COUNT(*)::TEXT AS result
+from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND "Epigrafe" = 31
+
+
+UNION ALL
+
+--- Check total number of direct debits (epigraph 31)
+    SELECT 
+        '03 - DIRECT DEBITS - 03.02. Check total number of direct debits (epigraph 31)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 31
+
+UNION ALL
+
+--- Check total amount of direct debits (epigraph 31)
+    SELECT 
+        '03 - DIRECT DEBITS - 03.03. Check total amount of direct debits (epigraph 31)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 31
+
+UNION ALL
+
+-- Checks on Cards
+
+--- Check total rows with card payments
+    SELECT 
+        '04 - CARDS - 04.01. Check total rows with card payments',
+        COUNT(*)::TEXT AS result
+from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND "Epigrafe" in (41,412,4121,41219,4122,41229)
+
+UNION ALL
+
+-- Check that MCC code is not empty in all epigraphs 41219 & 41229
+SELECT 
+    '04 - CARDS - 04.02. Check that MCC code is not empty in all epigraphs 41219 & 41229' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (
+                    SELECT COUNT(*) 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE report_dt = (SELECT report_dt FROM params)
+                      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND "Epigrafe" IN (41219,41229)
+                ) = (
+                    SELECT COUNT(*) 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE report_dt = (SELECT report_dt FROM params)
+                      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND "Epigrafe" IN (41219,41229)
+                      and mcc is not null
+                      AND MCC::text IN ('0742','0743','0744','0763','0780','1353','1406','1520','1711','1731','1740','1750','1761','1771','1799','2741','2791','2842','G300','3000','G335','3351','G350','3501','4011','4111','4112','4119','4121','4131','4214','4215','4225','4411','4457','4468','4511','4582','4722','4723','4784','4789','4812','4813','4814','4815','4816','4821','4829','4899','4900','5013','5021','5039','5044','5045','5046','5047','5051','5065','5072','5074','5085','5094','5099','5111','5122','5131','5137','5139','5169','5172','5192','5193','5198','5199','5200','5211','5231','5251','5261','5262','5271','5299','5300','5309','5310','5311','5331','5333','5399','5411','5422','5441','5451','5462','5499','5511','5521','5531','5532','5533','5541','5542','5551','5552','5561','5571','5592','5598','5599','5611','5621','5631','5641','5651','5655','5661','5681','5691','5697','5698','5699','5712','5713','5714','5715','5718','5719','5722','5723','5732','5733','5734','5735','5811','5812','5813','5814','5815','5816','5817','5818','5912','5921','5931','5932','5933','5935','5937','5940','5941','5942','5943','5944','5945','5946','5947','5948','5949','5950','5960','5961','5962','5963','5964','5965','5966','5967','5968','5969','5970','5971','5972','5973','5974','5975','5976','5977','5978','5983','5992','5993','5994','5995','5996','5997','5998','5999','6012','6050','6051','6211','6300','6381','6399','6513','6529','6530','6532','6533','6535','6536','6537','6538','6539','6540','6611','6760','7011','7012','7032','7033','7210','7211','7216','7217','7221','7230','7251','7261','7273','7276','7277','7278','7280','7295','7296','7297','7298','7299','7311','7321','7322','7332','7333','7338','7339','7342','7349','7361','7372','7375','7379','7392','7393','7394','7395','7399','7511','7512','7513','7519','7523','7524','7531','7534','7535','7538','7539','7542','7549','7622','7623','7629','7631','7641','7692','7699','7800','7801','7802','7829','7832','7833','7841','7911','7922','7929','7932','7933','7941','7991','7992','7993','7994','7995','7996','7997','7998','7999','8011','8021','8031','8041','8042','8043','8044','8049','8050','8062','8071','8099','8111','8211','8220','8241','8244','8249','8299','8351','8398','8641','8651','8661','8675','8699','8734','8911','8912','8931','8999','9034','9211','9222','9223','9311','9399','9400','9402','9405','9406','9700','9701','9702','9751','9752','9754','9950','R999','9999')
+                )
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+--- Check total number of card payments (epigraph 41)
+    SELECT 
+        '04 - CARDS - 04.03. Check total number of card payments (epigraph 41)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 41
+
+UNION ALL
+
+--- Check total amount of card payments (epigraph 41)
+    SELECT 
+        '04 - CARDS - 04.04. Check total amount of card payments (epigraph 41)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 41
+
+UNION ALL
+
+---Check that total number of transactions in Epigrafe 41 equals 4121 + 4122
+
+SELECT 
+    '04 - CARDS - 04.05. Check that total number of transactions in Epigrafe 41 (total transactions) equals 4121 + 4122 (non-remote & remote)' AS validation_check,
+    (
+        CASE 
+            WHEN 
+                COALESCE((
+                    SELECT SUM("Numero de operaciones/Volumen") 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND report_dt = (SELECT report_dt FROM params)
+                      AND "Epigrafe" = 41
+                ), 0) 
+                =
+                COALESCE((
+                    SELECT SUM("Numero de operaciones/Volumen") 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND report_dt = (SELECT report_dt FROM params)
+                      AND "Epigrafe" IN (4121, 4122)
+                ), 0)
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+---Check that total amount of transactions in Epigrafe 41 equals 4121 + 4122
+
+SELECT 
+    '04 - CARDS - 04.06. Check that total amount of transactions in Epigrafe 41 (total transactions) equals 4121 + 4122 (non-remote & remote)' AS validation_check,
+    (
+        CASE 
+            WHEN 
+                COALESCE((
+                    SELECT SUM("Importe") 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND report_dt = (SELECT report_dt FROM params)
+                      AND "Epigrafe" = 41
+                ), 0) 
+                =
+                COALESCE((
+                    SELECT SUM("Importe") 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND report_dt = (SELECT report_dt FROM params)
+                      AND "Epigrafe" IN (4121, 4122)
+                ), 0)
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+---Check that total number of transactions in Epigrafe 4121 (non-remote) equals 41219 (non-remote broken down by MCC)
+
+SELECT 
+    '04 - CARDS - 04.07. Check that total number of transactions in Epigrafe 4121 (non-remote) equals 41219 (non-remote broken down by MCC)' AS validation_check,
+    (
+        CASE 
+            WHEN 
+                COALESCE((
+                    SELECT SUM("Numero de operaciones/Volumen") 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND report_dt = (SELECT report_dt FROM params)
+                      AND "Epigrafe" = 4121
+                ), 0) 
+                =
+                COALESCE((
+                    SELECT SUM("Numero de operaciones/Volumen") 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND report_dt = (SELECT report_dt FROM params)
+                      AND "Epigrafe" = 41219
+                ), 0)
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+---Check that total amount of transactions in Epigrafe 4121 (non-remote) equals 41219 (non-remote broken down by MCC)
+
+SELECT 
+    '04 - CARDS - 04.08. Check that total amount of transactions in Epigrafe 4121 (non-remote) equals 41219 (non-remote broken down by MCC)' AS validation_check,
+    (
+        CASE 
+            WHEN 
+                COALESCE((
+                    SELECT SUM("Importe") 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND report_dt = (SELECT report_dt FROM params)
+                      AND "Epigrafe" = 4121
+                ), 0) 
+                =
+                COALESCE((
+                    SELECT SUM("Importe") 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND report_dt = (SELECT report_dt FROM params)
+                      AND "Epigrafe" = 41219
+                ), 0)
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+---Check that total number of transactions in Epigrafe 4122 (remote) equals 41229 (nremote broken down by MCC)
+
+SELECT 
+    '04 - CARDS - 04.09. Check that total number of transactions in Epigrafe 4122 (remote) equals 41229 (nremote broken down by MCC)' AS validation_check,
+    (
+        CASE 
+            WHEN 
+                COALESCE((
+                    SELECT SUM("Numero de operaciones/Volumen") 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND report_dt = (SELECT report_dt FROM params)
+                      AND "Epigrafe" = 4122
+                ), 0) 
+                =
+                COALESCE((
+                    SELECT SUM("Numero de operaciones/Volumen") 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND report_dt = (SELECT report_dt FROM params)
+                      AND "Epigrafe" = 41229
+                ), 0)
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+---Check that total amount of transactions in Epigrafe 4122 (remote) equals 41229 (nremote broken down by MCC)
+
+SELECT 
+    '04 - CARDS - 04.10. Check that total amount of transactions in Epigrafe 4122 (remote) equals 41229 (nremote broken down by MCC)' AS validation_check,
+    (
+        CASE 
+            WHEN 
+                COALESCE((
+                    SELECT SUM("Importe") 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND report_dt = (SELECT report_dt FROM params)
+                      AND "Epigrafe" = 4122
+                ), 0) 
+                =
+                COALESCE((
+                    SELECT SUM("Importe") 
+                    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl9
+                    WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+                      AND report_dt = (SELECT report_dt FROM params)
+                      AND "Epigrafe" = 41229
+                ), 0)
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+
+ ) AS validation_summary
+ORDER BY validation_check;
