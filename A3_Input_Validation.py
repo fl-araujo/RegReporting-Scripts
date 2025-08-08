@@ -1636,7 +1636,7 @@ checks_5876321 = [
         FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876321
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("10. REC-INIZIO-RESTO VALUE 6 in (0655,0657,0656,0658,0659)", f"""
+    ("10. Reasons for fraud in (0655,0657,0656,0658,0659)", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 6" IN (0655,0657,0656,0658,0659) THEN 1 ELSE 0 END)
@@ -1765,7 +1765,7 @@ checks_5876317 = [
         FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876317
         WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
     """),
-    ("10. REC-INIZIO-RESTO VALUE 6 in (0655,0657,0656,0658,0659)", f"""
+    ("10. Fraud reasons (01006) in (0655,0657,0656,0658,0659)", f"""
     SELECT 
         CASE 
             WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 6" IN (0655,0657,0656,0658,0659) THEN 1 ELSE 0 END)
@@ -2236,6 +2236,444 @@ checks_5874501 = [
     """),
     ]
 
+# === CHECKS FOR FTO 5876807 ===
+checks_5876807 = [
+    ("1. Number of rows", f"""
+        SELECT COUNT(*) 
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("2. Number of distinct customers", f"""
+        SELECT COUNT(DISTINCT "REC-INIZIO-RAPP-VALORE")
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("3. REC-INIZIO-NDG-VALORE length equal to 16", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN LENGTH("REC-INIZIO-NDG-VALORE") = 16 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_length_16
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("4. REC-INIZIO-RAPP-VALORE length equal to 16", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN LENGTH("REC-INIZIO-RAPP-VALORE") = 16 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_length_16
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("5. Currency reported as EUR", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 1" = 1 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_currency_eur
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("6. Customers reside in Italy", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 2" = 1 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_customers_italy
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("7. Valid country codes", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE 
+                WHEN "REC-INIZIO-RESTO VALUE 3" IN (002,003,004,005,006,007,008,009,010,011,012,013,014,015,
+                016,017,018,019,020,021,022,023,024,025,026,027,028,029,031,032,033,034,035,036,037,038,039,
+                040,041,042,043,044,045,046,047,048,049,050,051,052,053,054,055,056,057,058,059,061,062,063,
+                064,065,066,067,068,069,070,071,072,074,075,076,077,078,079,080,081,082,083,084,085,086,087,
+                088,089,090,091,092,093,094,095,097,098,101,102,103,104,105,106,107,109,112,113,114,115,116,
+                117,118,119,120,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,141,142,
+                144,145,146,147,149,150,151,152,153,155,156,157,158,159,160,161,162,163,167,168,169,175,176,
+                182,185,186,187,188,189,190,191,198,200,203,204,206,207,213,214,218,220,225,226,235,236,237,
+                247,248,251,253,254,257,258,259,260,261,262,263,264,265,266,267,268,269,271,274,275,276,277,
+                278,288,289,290,291
+                ) THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE'
+        END AS all_country_codes_valid
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("8. Number of transactions", f"""
+        SELECT SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 4", 1, 15) AS NUMERIC)) AS total_count
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("9. Value of transactions", f"""
+        SELECT ROUND(SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 5", 1, 15) AS NUMERIC))/100, 2) AS total_sum
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("10. Fraud reasons (01006) in (0655,0657,0656,0658,0659)", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 6" IN (0655,0657,0656,0658,0659) THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+            END AS all_types_valid
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("11. PCS is equal to 377", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 7" = 377 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_pcs_type_377
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("12. Valid country codes (02130)", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE 
+                WHEN "REC-INIZIO-RESTO VALUE 8" IN (002,003,004,005,006,007,008,009,010,011,012,013,014,015,
+                016,017,018,019,020,021,022,023,024,025,026,027,028,029,031,032,033,034,035,036,037,038,039,
+                040,041,042,043,044,045,046,047,048,049,050,051,052,053,054,055,056,057,058,059,061,062,063,
+                064,065,066,067,068,069,070,071,072,074,075,076,077,078,079,080,081,082,083,084,085,086,087,
+                088,089,090,091,092,093,094,095,097,098,101,102,103,104,105,106,107,109,112,113,114,115,116,
+                117,118,119,120,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,141,142,
+                144,145,146,147,149,150,151,152,153,155,156,157,158,159,160,161,162,163,167,168,169,175,176,
+                182,185,186,187,188,189,190,191,198,200,203,204,206,207,213,214,218,220,225,226,235,236,237,
+                247,248,251,253,254,257,258,259,260,261,262,263,264,265,266,267,268,269,271,274,275,276,277,
+                278,288,289,290,291
+                ) THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE'
+        END AS all_country_codes_valid
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ]
+
+# === CHECKS FOR FTO 5876309 ===
+checks_5876309 = [
+    ("1. Number of rows", f"""
+        SELECT COUNT(*) 
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875309
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("2. Number of distinct customers", f"""
+        SELECT COUNT(DISTINCT "REC-INIZIO-RAPP-VALORE")
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875309
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("3. REC-INIZIO-NDG-VALORE length equal to 16", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN LENGTH("REC-INIZIO-NDG-VALORE") = 16 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_length_16
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875309
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("4. REC-INIZIO-RAPP-VALORE length equal to 16", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN LENGTH("REC-INIZIO-RAPP-VALORE") = 16 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_length_16
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875309
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("5. Customers reside in Italy", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 1" = 1 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_customers_italy
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875309
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("6. Valid country codes", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE 
+                WHEN "REC-INIZIO-RESTO VALUE 2" IN (002,003,004,005,006,007,008,009,010,011,012,013,014,015,
+                016,017,018,019,020,021,022,023,024,025,026,027,028,029,031,032,033,034,035,036,037,038,039,
+                040,041,042,043,044,045,046,047,048,049,050,051,052,053,054,055,056,057,058,059,061,062,063,
+                064,065,066,067,068,069,070,071,072,074,075,076,077,078,079,080,081,082,083,084,085,086,087,
+                088,089,090,091,092,093,094,095,097,098,101,102,103,104,105,106,107,109,112,113,114,115,116,
+                117,118,119,120,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,141,142,
+                144,145,146,147,149,150,151,152,153,155,156,157,158,159,160,161,162,163,167,168,169,175,176,
+                182,185,186,187,188,189,190,191,198,200,203,204,206,207,213,214,218,220,225,226,235,236,237,
+                247,248,251,253,254,257,258,259,260,261,262,263,264,265,266,267,268,269,271,274,275,276,277,
+                278,288,289,290,291
+                ) THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE'
+        END AS all_country_codes_valid
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875309
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("7. Number of transactions", f"""
+        SELECT SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 3", 1, 15) AS NUMERIC)) AS total_count
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875309
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("8. Value of transactions", f"""
+        SELECT ROUND(SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 4", 1, 15) AS NUMERIC))/100, 2) AS total_sum
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875309
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("9. Initialization type is reported as 145", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 5" = 145 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_initialization_type_5
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875309
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("10. Valid country codes (02130)", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE 
+                WHEN "REC-INIZIO-RESTO VALUE 6" IN (002,003,004,005,006,007,008,009,010,011,012,013,014,015,
+                016,017,018,019,020,021,022,023,024,025,026,027,028,029,031,032,033,034,035,036,037,038,039,
+                040,041,042,043,044,045,046,047,048,049,050,051,052,053,054,055,056,057,058,059,061,062,063,
+                064,065,066,067,068,069,070,071,072,074,075,076,077,078,079,080,081,082,083,084,085,086,087,
+                088,089,090,091,092,093,094,095,097,098,101,102,103,104,105,106,107,109,112,113,114,115,116,
+                117,118,119,120,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,141,142,
+                144,145,146,147,149,150,151,152,153,155,156,157,158,159,160,161,162,163,167,168,169,175,176,
+                182,185,186,187,188,189,190,191,198,200,203,204,206,207,213,214,218,220,225,226,235,236,237,
+                247,248,251,253,254,257,258,259,260,261,262,263,264,265,266,267,268,269,271,274,275,276,277,
+                278,288,289,290,291
+                ) THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE'
+        END AS all_country_codes_valid
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875309
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ]
+
+# === CHECKS FOR FTO 5875913 ===
+checks_5875913 = [
+    ("1. Number of rows", f"""
+        SELECT COUNT(*) 
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875913
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("2. Number of distinct customers", f"""
+        SELECT COUNT(DISTINCT "REC-INIZIO-RAPP-VALORE")
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875913
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("3. REC-INIZIO-NDG-VALORE length equal to 16", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN LENGTH("REC-INIZIO-NDG-VALORE") = 16 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_length_16
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875913
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("4. REC-INIZIO-RAPP-VALORE length equal to 16", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN LENGTH("REC-INIZIO-RAPP-VALORE") = 16 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_length_16
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875913
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("5. Customers reside in Italy", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 1" = 1 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_customers_italy
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875913
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("6. Valid country codes", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE 
+                WHEN "REC-INIZIO-RESTO VALUE 2" IN (002,003,004,005,006,007,008,009,010,011,012,013,014,015,
+                016,017,018,019,020,021,022,023,024,025,026,027,028,029,031,032,033,034,035,036,037,038,039,
+                040,041,042,043,044,045,046,047,048,049,050,051,052,053,054,055,056,057,058,059,061,062,063,
+                064,065,066,067,068,069,070,071,072,074,075,076,077,078,079,080,081,082,083,084,085,086,087,
+                088,089,090,091,092,093,094,095,097,098,101,102,103,104,105,106,107,109,112,113,114,115,116,
+                117,118,119,120,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,141,142,
+                144,145,146,147,149,150,151,152,153,155,156,157,158,159,160,161,162,163,167,168,169,175,176,
+                182,185,186,187,188,189,190,191,198,200,203,204,206,207,213,214,218,220,225,226,235,236,237,
+                247,248,251,253,254,257,258,259,260,261,262,263,264,265,266,267,268,269,271,274,275,276,277,
+                278,288,289,290,291
+                ) THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE'
+        END AS all_country_codes_valid
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875913
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("7. Number of transactions", f"""
+        SELECT SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 3", 1, 15) AS NUMERIC)) AS total_count
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875913
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("8. Value of transactions", f"""
+        SELECT ROUND(SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 4", 1, 15) AS NUMERIC))/100, 2) AS total_sum
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875913
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("9. Valid country codes (02130)", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE 
+                WHEN "REC-INIZIO-RESTO VALUE 5" IN (002,003,004,005,006,007,008,009,010,011,012,013,014,015,
+                016,017,018,019,020,021,022,023,024,025,026,027,028,029,031,032,033,034,035,036,037,038,039,
+                040,041,042,043,044,045,046,047,048,049,050,051,052,053,054,055,056,057,058,059,061,062,063,
+                064,065,066,067,068,069,070,071,072,074,075,076,077,078,079,080,081,082,083,084,085,086,087,
+                088,089,090,091,092,093,094,095,097,098,101,102,103,104,105,106,107,109,112,113,114,115,116,
+                117,118,119,120,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,141,142,
+                144,145,146,147,149,150,151,152,153,155,156,157,158,159,160,161,162,163,167,168,169,175,176,
+                182,185,186,187,188,189,190,191,198,200,203,204,206,207,213,214,218,220,225,226,235,236,237,
+                247,248,251,253,254,257,258,259,260,261,262,263,264,265,266,267,268,269,271,274,275,276,277,
+                278,288,289,290,291
+                ) THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE'
+        END AS all_country_codes_valid
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875913
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ]
+
+# === CHECKS FOR FTO 5876313 ===
+checks_5876313 = [
+    ("1. Number of rows", f"""
+        SELECT COUNT(*) 
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("2. Number of distinct customers", f"""
+        SELECT COUNT(DISTINCT "REC-INIZIO-RAPP-VALORE")
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("3. REC-INIZIO-NDG-VALORE length equal to 16", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN LENGTH("REC-INIZIO-NDG-VALORE") = 16 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_length_16
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("4. REC-INIZIO-RAPP-VALORE length equal to 16", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN LENGTH("REC-INIZIO-RAPP-VALORE") = 16 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_length_16
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("5. Currency reported as EUR", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 1" = 1 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_currency_eur
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("6. Customers reside in Italy", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 2" = 1 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_customers_italy
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("7. Valid country codes", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE 
+                WHEN "REC-INIZIO-RESTO VALUE 3" IN (002,003,004,005,006,007,008,009,010,011,012,013,014,015,
+                016,017,018,019,020,021,022,023,024,025,026,027,028,029,031,032,033,034,035,036,037,038,039,
+                040,041,042,043,044,045,046,047,048,049,050,051,052,053,054,055,056,057,058,059,061,062,063,
+                064,065,066,067,068,069,070,071,072,074,075,076,077,078,079,080,081,082,083,084,085,086,087,
+                088,089,090,091,092,093,094,095,097,098,101,102,103,104,105,106,107,109,112,113,114,115,116,
+                117,118,119,120,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,141,142,
+                144,145,146,147,149,150,151,152,153,155,156,157,158,159,160,161,162,163,167,168,169,175,176,
+                182,185,186,187,188,189,190,191,198,200,203,204,206,207,213,214,218,220,225,226,235,236,237,
+                247,248,251,253,254,257,258,259,260,261,262,263,264,265,266,267,268,269,271,274,275,276,277,
+                278,288,289,290,291
+                ) THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE'
+        END AS all_country_codes_valid
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("8. Number of transactions", f"""
+        SELECT SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 4", 1, 15) AS NUMERIC)) AS total_count
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("9. Value of transactions", f"""
+        SELECT ROUND(SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 5", 1, 15) AS NUMERIC))/100, 2) AS total_sum
+        FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+        WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("10. Fraud reasons (01006) in (0655,0657,0656,0658,0659)", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 6" IN (0655,0657,0656,0658,0659) THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+            END AS all_types_valid
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("11. PCS is equal to 377", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE WHEN "REC-INIZIO-RESTO VALUE 7" = 377 THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+        END AS all_pcs_type_377
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("12. Non-SCA operations show valid reason", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE 
+                WHEN "REC-INIZIO-RESTO VALUE 8" IN (410,411,412,413,414,415,416,417,418,419,420,777
+                ) THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE' 
+            END AS all_non_sca_operations_valid
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ("13. Valid country codes (02130)", f"""
+    SELECT 
+        CASE 
+            WHEN COUNT(*) = SUM(CASE 
+                WHEN "REC-INIZIO-RESTO VALUE 9" IN (002,003,004,005,006,007,008,009,010,011,012,013,014,015,
+                016,017,018,019,020,021,022,023,024,025,026,027,028,029,031,032,033,034,035,036,037,038,039,
+                040,041,042,043,044,045,046,047,048,049,050,051,052,053,054,055,056,057,058,059,061,062,063,
+                064,065,066,067,068,069,070,071,072,074,075,076,077,078,079,080,081,082,083,084,085,086,087,
+                088,089,090,091,092,093,094,095,097,098,101,102,103,104,105,106,107,109,112,113,114,115,116,
+                117,118,119,120,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,141,142,
+                144,145,146,147,149,150,151,152,153,155,156,157,158,159,160,161,162,163,167,168,169,175,176,
+                182,185,186,187,188,189,190,191,198,200,203,204,206,207,213,214,218,220,225,226,235,236,237,
+                247,248,251,253,254,257,258,259,260,261,262,263,264,265,266,267,268,269,271,274,275,276,277,
+                278,288,289,290,291
+                ) THEN 1 ELSE 0 END)
+            THEN 'TRUE' ELSE 'FALSE'
+        END AS all_country_codes_valid
+    FROM teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313
+    WHERE snapshot_dt = '{SNAPSHOT_DT}' AND report_dt = '{REPORT_DT}'
+    """),
+    ]
+
 # === Tables info for download (table name and output CSV filename) ===
 tables_to_download = {
     "5855001": "teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a3_fto_5855001",
@@ -2259,7 +2697,13 @@ tables_to_download = {
     "5875110": "teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875110",
     "5875116": "teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875116",
     "5874501": "teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a3_fto_5874501",
+    "5876807": "teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876807",
+    "5876309": "teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875309",
+    "5875913": "teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5875913",
+    "5876313": "teams_prd.RMT_SENSITIVE_MART.mrt_snapshot__regulatory_reporting__italy_a3_fto_5876313"
 }
+
+
 
 # === HELPER FUNCTION TO FORMAT A TABLE ===
 def format_table(rows):
@@ -2368,9 +2812,13 @@ results_5862001 = run_checks("FTO 5862001", checks_5862001)
 results_5875110 = run_checks("FTO 5875110", checks_5875110)
 results_5875116 = run_checks("FTO 5875116", checks_5875116)
 results_5874501 = run_checks("FTO 5874501", checks_5874501)
+results_5876807 = run_checks("FTO 5876807", checks_5876807)
+results_5876309 = run_checks("FTO 5876309", checks_5876309)
+results_5875913 = run_checks("FTO 5875913", checks_5875913)
+results_5876313 = run_checks("FTO 5876313", checks_5876313)
 
 # Create summary table
-all_results = [results_5855001, results_5856501, results_5876002, results_5878006, results_5877504, results_5862591, results_5862593, results_5875315, results_5875320, results_5875911, results_5876311, results_5874751, results_5874817, results_5874921, results_5876321, results_5876317, results_5855501, results_5862001, results_5875110, results_5875116, results_5874501]
+all_results = [results_5855001, results_5856501, results_5876002, results_5878006, results_5877504, results_5862591, results_5862593, results_5875315, results_5875320, results_5875911, results_5876311, results_5874751, results_5874817, results_5874921, results_5876321, results_5876317, results_5855501, results_5862001, results_5875110, results_5875116, results_5874501, results_5876807, results_5876309, results_5875913, results_5876313]
 summary_table = create_summary_table(all_results)
 
 # === SAVE TO FILE ===
