@@ -1,7 +1,7 @@
 WITH params AS (
     SELECT 
         DATE '2025-06-30' AS report_dt, 
-        DATE '2025-08-26' AS snapshot_dt
+        DATE '2025-08-31' AS snapshot_dt
 )
 
 SELECT * FROM (
@@ -187,11 +187,21 @@ UNION ALL
   WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
     AND report_dt = (SELECT report_dt FROM params)
     AND "Epigrafe" = 21223
+
+UNION ALL
+
+    SELECT 
+        '02 - TRANSFERS - 02.06. Check total number of outcoming transfers, electronically initiated, inidividually initiated, through mobile payment solution and P2P (epigraph 212231)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 212231
     
 UNION ALL
 
     SELECT 
-        '02 - TRANSFERS - 02.06. Check total number of outcoming transfers, electronically initiated, remote (epigraph 2123)',
+        '02 - TRANSFERS - 02.07. Check total number of outcoming transfers, electronically initiated, remote (epigraph 2123)',
     SUM ("Numero de operaciones/Volumen")::TEXT AS result
  from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
   WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
@@ -201,7 +211,7 @@ UNION ALL
 UNION ALL
 
     SELECT 
-        '02 - TRANSFERS - 02.07. Check total number of outcoming transfers, electronically initiated, remote, SCA (epigraph 21231)',
+        '02 - TRANSFERS - 02.08. Check total number of outcoming transfers, electronically initiated, remote, SCA (epigraph 21231)',
     SUM ("Numero de operaciones/Volumen")::TEXT AS result
  from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
   WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
@@ -212,7 +222,7 @@ UNION ALL
 UNION ALL
 
     SELECT 
-        '02 - TRANSFERS - 02.08. Check total number of incoming transfers (epigraph 22)',
+        '02 - TRANSFERS - 02.09. Check total number of incoming transfers (epigraph 22)',
     SUM ("Numero de operaciones/Volumen")::TEXT AS result
  from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
   WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
@@ -221,7 +231,7 @@ UNION ALL
 UNION ALL
 
     SELECT 
-        '02 - TRANSFERS - 02.09. Check total amount of outcoming transfers (epigraph 21)',
+        '02 - TRANSFERS - 02.10. Check total amount of outcoming transfers (epigraph 21)',
     SUM ("Importe")::TEXT AS result
  from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
   WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
@@ -231,7 +241,7 @@ UNION ALL
 UNION ALL
 
     SELECT 
-        '02 - TRANSFERS - 02.10. Check total amount of outcoming transfers, electronically initiated (epigraph 212)',
+        '02 - TRANSFERS - 02.11. Check total amount of outcoming transfers, electronically initiated (epigraph 212)',
     SUM ("Importe")::TEXT AS result
  from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
   WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
@@ -241,7 +251,7 @@ UNION ALL
 UNION ALL
 
     SELECT 
-        '02 - TRANSFERS - 02.11. Check total amount of outcoming transfers, electronically initiated, inidividually initiated (epigraph 2122)',
+        '02 - TRANSFERS - 02.12. Check total amount of outcoming transfers, electronically initiated, inidividually initiated (epigraph 2122)',
     SUM ("Importe")::TEXT AS result
  from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
   WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
@@ -251,17 +261,27 @@ UNION ALL
 UNION ALL
 
     SELECT 
-        '02 - TRANSFERS - 02.12. Check total amount of outcoming transfers, electronically initiated, inidividually initiated, through mobile payment solution (epigraph 21223)',
+        '02 - TRANSFERS - 02.13. Check total amount of outcoming transfers, electronically initiated, inidividually initiated, through mobile payment solution (epigraph 21223)',
     SUM ("Importe")::TEXT AS result
  from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
   WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
     AND report_dt = (SELECT report_dt FROM params)
     AND "Epigrafe" = 21223
-    
+
 UNION ALL
 
     SELECT 
-        '02 - TRANSFERS - 02.13. Check total amount of outcoming transfers, electronically initiated, remote (epigraph 2123)',
+        '02 - TRANSFERS - 02.14. Check total amount of outcoming transfers, electronically initiated, inidividually initiated, through mobile payment solution and P2P (epigraph 212231)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 212231
+
+UNION ALL
+
+    SELECT 
+        '02 - TRANSFERS - 02.15. Check total amount of outcoming transfers, electronically initiated, remote (epigraph 2123)',
     SUM ("Importe")::TEXT AS result
  from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
   WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
@@ -271,7 +291,7 @@ UNION ALL
 UNION ALL
 
     SELECT 
-        '02 - TRANSFERS - 02.14. Check total amount of outcoming transfers, electronically initiated, remote, SCA (epigraph 21231)',
+        '02 - TRANSFERS - 02.16. Check total amount of outcoming transfers, electronically initiated, remote, SCA (epigraph 21231)',
     SUM ("Importe")::TEXT AS result
  from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
   WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
@@ -282,7 +302,7 @@ UNION ALL
 UNION ALL
 
     SELECT 
-        '02 - TRANSFERS - 02.15. Check total amount of incoming transfers (epigraph 22)',
+        '02 - TRANSFERS - 02.17. Check total amount of incoming transfers (epigraph 22)',
     SUM ("Importe")::TEXT AS result
  from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
   WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
@@ -292,7 +312,7 @@ UNION ALL
 UNION ALL
 
 SELECT
-    '02 - TRANSFERS - 02.16. Check that 02.02, 02.03, 02.04, 02.05. 02.06 and 02.07 are the same (total number of transfers is the same accross epigraphs)' AS validation_check,
+    '02 - TRANSFERS - 02.18. Check that 02.02 = 02.03 = 02.04 = 02.05 = 02.07 = 02.08 and > 02.06 (total number of transfers is the same accross epigraphs, except for P2P)' AS validation_check,
     (
         CASE 
             WHEN SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" ELSE 0 END) =
@@ -309,6 +329,9 @@ SELECT
              AND
                  SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" ELSE 0 END) =
                  SUM(CASE WHEN "Epigrafe" = 21231 THEN "Numero de operaciones/Volumen" ELSE 0 END)
+             AND
+                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" ELSE 0 END) >
+                 SUM(CASE WHEN "Epigrafe" = 212231 THEN "Numero de operaciones/Volumen" ELSE 0 END)
             THEN 'TRUE'
             ELSE 'FALSE'
         END
@@ -321,7 +344,7 @@ WHERE report_dt = (SELECT report_dt FROM params)
 UNION ALL
 
 SELECT
-    '02 - TRANSFERS - 02.17. Check that 02.09, 02.10, 02.11, 02.12. 02.13 and 02.14 are the same (total number of transfers is the same accross epigraphs)' AS validation_check,
+    '02 - TRANSFERS - 02.19. Check that 02.10 = 02.11 = 02.12 = 02.13 = 02.15 = 02.16 and > 02.14 (total amount of transfers is the same accross epigraphs, except for P2P)' AS validation_check,
     (
         CASE 
             WHEN SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" ELSE 0 END) =
@@ -338,6 +361,9 @@ SELECT
              AND
                  SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" ELSE 0 END) =
                  SUM(CASE WHEN "Epigrafe" = 21231 THEN "Importe" ELSE 0 END)
+             AND
+                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" ELSE 0 END) >
+                 SUM(CASE WHEN "Epigrafe" = 212231 THEN "Importe" ELSE 0 END)
             THEN 'TRUE'
             ELSE 'FALSE'
         END
@@ -350,7 +376,7 @@ WHERE report_dt = (SELECT report_dt FROM params)
 UNION ALL
 
 SELECT
-    '02 - TRANSFERS - 02.18. Check that Transfer Scheme is either SEPA or SEPAI in epigraph 21231' AS validation_check,
+    '02 - TRANSFERS - 02.20. Check that Transfer Scheme is either SEPA or SEPAI in epigraph 21231' AS validation_check,
     (
         CASE
             WHEN
