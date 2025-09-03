@@ -326,8 +326,45 @@ if not invalid_country_rows.empty:
     excel_only_details.append("\nInvalid Country_region Records:")
     excel_only_details.append(invalid_country_table)
 
+# ---------------- INFORMATION TABLE: NON-EUR CURRENCY RECORDS ----------------
+information_header = ["\nInformation Table\n"]
+information_details = []
+
+# Filter records where Original_CCY is different from 'EUR'
+df_non_eur = df_excel_filtered[df_excel_filtered["Original_CCY"] != "EUR"].copy()
+
+if not df_non_eur.empty:
+    non_eur_table_rows = []
+    for _, row in df_non_eur.iterrows():
+        original_amt = row["Exposure_Amt_Original_CCY"]
+        eur_amt = row["Exposure_Amt_EUR"]
+        
+        # Calculate ratio (Original_CCY / EUR), handle division by zero
+        if pd.notna(eur_amt) and eur_amt != 0:
+            ratio = original_amt / eur_amt
+        else:
+            ratio = "N/A"
+        
+        non_eur_table_rows.append([
+            format_id_pair(row["G/L_Account"], row["SAP_ID_Counterparty"]),
+            row["Original_CCY"],
+            original_amt,
+            eur_amt,
+            f"{ratio:.6f}" if ratio != "N/A" else ratio
+        ])
+    
+    non_eur_table = tabulate(
+        non_eur_table_rows,
+        headers=["G/L_Account_SAP_ID", "Original_CCY", "Exposure_Amt_Original_CCY", "Exposure_Amt_EUR", "Ratio (Original/EUR)"],
+        tablefmt="grid"
+    )
+    information_details.append(f"Non-EUR Currency Records ({len(df_non_eur)} records):")
+    information_details.append(non_eur_table)
+else:
+    information_details.append("No records found with Original_CCY different from EUR")
+
 # ---------------- FINAL OUTPUT ----------------
-output_lines = header + [sf_table] + sf_details + excel_only_header + [excel_only_table] + excel_only_details
+output_lines = header + [sf_table] + sf_details + excel_only_header + [excel_only_table] + excel_only_details + information_header + information_details
 
 with open(OUTPUT_FILE, "w") as f:
     for line in output_lines:
