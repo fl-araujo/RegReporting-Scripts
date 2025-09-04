@@ -200,18 +200,40 @@ excel_only_rows.append([
     len(invalid_encumbrance_rows)
 ])
 
-# ---------------- Check 6: Country_region must be populated if SAP_ID_Counterparty is empty ----------------
+# ---------------- Check 6: Type_Encumbrance consistency with Encumbrance_Indicator ----------------
+# If Encumbrance_Indicator is 'unencumbered', Type_Encumbrance must be empty
+# If Encumbrance_Indicator is 'encumbered', Type_Encumbrance must not be empty
+
+invalid_type_encumbrance_rows = df_excel_filtered[
+    ((df_excel_filtered["Encumbrance_Indicator"] == "unencumbered") & 
+     (df_excel_filtered["Type_Encumbrance"].notna()) & 
+     (df_excel_filtered["Type_Encumbrance"] != "")) |
+    ((df_excel_filtered["Encumbrance_Indicator"] == "encumbered") & 
+     ((df_excel_filtered["Type_Encumbrance"].isna()) | 
+      (df_excel_filtered["Type_Encumbrance"] == "")))
+].copy()
+
+check6_result = "✅ True" if len(invalid_type_encumbrance_rows) == 0 else "❌ False"
+
+excel_only_rows.append([
+    "Check 6",
+    "Type_Encumbrance consistency: empty if 'unencumbered', populated if 'encumbered'",
+    check6_result,
+    len(invalid_type_encumbrance_rows)
+])
+
+# ---------------- Check 7: Country_region must be populated if SAP_ID_Counterparty is empty ----------------
 invalid_country_rows = df_excel_filtered[
     (df_excel_filtered["SAP_ID_Counterparty"].isna() | (df_excel_filtered["SAP_ID_Counterparty"] == "")) &
     (df_excel_filtered["Country_region"].isna() | (df_excel_filtered["Country_region"] == ""))
 ].copy()
 
-check6_result = "✅ True" if len(invalid_country_rows) == 0 else "❌ False"
+check7_result = "✅ True" if len(invalid_country_rows) == 0 else "❌ False"
 
 excel_only_rows.append([
-    "Check 6",
+    "Check 7",
     "Country_region must be populated if SAP_ID_Counterparty is empty",
-    check6_result,
+    check7_result,
     len(invalid_country_rows)
 ])
 
@@ -309,6 +331,23 @@ if not invalid_encumbrance_rows.empty:
     )
     excel_only_details.append("\nInvalid Encumbrance_Indicator Records:")
     excel_only_details.append(invalid_encumbrance_table)
+
+# Table for invalid Type_Encumbrance records
+if not invalid_type_encumbrance_rows.empty:
+    type_encumbrance_table_rows = []
+    for _, row in invalid_type_encumbrance_rows.iterrows():
+        type_encumbrance_table_rows.append([
+            format_id_pair(row["G/L_Account"], row["SAP_ID_Counterparty"]),
+            row["Encumbrance_Indicator"],
+            row["Type_Encumbrance"] if pd.notna(row["Type_Encumbrance"]) else ""
+        ])
+    invalid_type_encumbrance_table = tabulate(
+        type_encumbrance_table_rows,
+        headers=["G/L_Account_SAP_ID", "Encumbrance_Indicator", "Type_Encumbrance"],
+        tablefmt="grid"
+    )
+    excel_only_details.append("\nInvalid Type_Encumbrance Records:")
+    excel_only_details.append(invalid_type_encumbrance_table)
     
 # Table for invalid Country_region records
 if not invalid_country_rows.empty:
