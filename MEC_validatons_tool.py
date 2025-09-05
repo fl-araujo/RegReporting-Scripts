@@ -4,9 +4,9 @@ from datetime import datetime
 from tabulate import tabulate
 
 # ---------------- PARAMETERS ----------------
-REFERENCE_DATE = "2025-07-31"  # Now in ISO format (YYYY-MM-DD)
-SNAPSHOT_DATE = "2025-09-01"
-EXCEL_FILE = "mec_validations/input_files/Jul-25 Manual subledger Accounting.xlsx"
+REFERENCE_DATE = "2025-08-31"  # Now in ISO format (YYYY-MM-DD)
+SNAPSHOT_DATE = "2025-09-04"
+EXCEL_FILE = "mec_validations/input_files/Aug-25 Manual subledger Accounting.xlsx"
 EXCEL_SHEET = "Manual"
 OUTPUT_FILE = "mec_validations/output_files/validation_output.txt"
 
@@ -15,6 +15,7 @@ def clean_ids(series):
     return (
         series.dropna()
         .apply(lambda x: str(int(x)) if isinstance(x, (int, float)) and not pd.isna(x) else str(x))
+        .astype(str)  # Ensure all values are strings before using .str accessor
         .str.strip()
         .unique()
         .tolist()
