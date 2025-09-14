@@ -1,0 +1,321 @@
+WITH params AS (
+    SELECT 
+        DATE '2025-06-30' AS report_dt, 
+        DATE '2025-09-13' AS snapshot_dt
+)
+
+--GENERAL CHECKS-----------------------------------------------------------------------------------------------------------------------------------------
+SELECT * FROM (
+
+    SELECT 
+        '01 - GENERAL CHECKS - 01.01. Check number of rows' AS validation_check,
+        COUNT(*)::TEXT AS result
+from TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.02. Check that ENTIDAD is always W0322893I which refers to TRBs CIF' AS validation_check,
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                   AND ENTIDAD = 'W0322893I'
+                )
+::TEXT AS result
+
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.03. Check that reporting period is not null' AS validation_check,
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+                WHERE report_dt = (SELECT report_dt FROM params)
+                 AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                AND PERIODO is not null
+                )
+::TEXT AS result
+
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.04. Check that Table (Cuadro) is always "2"' AS validation_check,
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND cuadro is not null
+    AND cuadro = 2
+                )
+::TEXT AS result
+
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.05. Check that Período is always 202506' AS validation_check,
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND periodo is not null
+    AND periodo = '202506'
+                )
+::TEXT AS result
+
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.06. Check that GEO is always ES (GEO 0)' AS validation_check,
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND geo is not null
+    AND geo = 'ES'   
+    )::TEXT AS result
+
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.07. Check that Card Scheme is always VISA' AS validation_check,
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                   AND "Epigrafe"= 200211
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND "Epigrafe"= 200211
+    AND "Desglose Regimen" = 'VISA'
+                )
+::TEXT AS result
+
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.08. Check that Instrumento de Pago is TARJETAS when card scheme is VISA' AS validation_check,
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                   AND "Epigrafe"= 200211
+                   AND "Desglose Regimen" = 'VISA'
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND "Epigrafe"= 200211
+    AND "Instrumento de Pago" = 'TARJETAS'
+                )
+::TEXT AS result
+
+UNION ALL
+
+--BDE VALIDATIONS-----------------------------------------------------------------------------------------------------------------------------------------
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.01. 200≤2001+2002+2003' AS validation_check,
+        (SELECT SUM("Numero de operaciones/Volumen")
+         FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+         WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+           AND report_dt = (SELECT report_dt FROM params)
+           AND "Epigrafe" = 200)
+        <=
+        (SELECT SUM("Numero de operaciones/Volumen")
+         FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+         WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+           AND report_dt = (SELECT report_dt FROM params)
+           AND "Epigrafe" IN (2001, 2002, 2003))
+::TEXT AS result
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.02. 2001≤200' AS validation_check,
+        (SELECT SUM("Numero de operaciones/Volumen")
+         FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+         WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+           AND report_dt = (SELECT report_dt FROM params)
+           AND "Epigrafe" = 2001)
+        <=
+        (SELECT SUM("Numero de operaciones/Volumen")
+         FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+         WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+           AND report_dt = (SELECT report_dt FROM params)
+           AND "Epigrafe" = 200)
+::TEXT AS result
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.03. 2002≥20021' AS validation_check,
+        (SELECT SUM("Numero de operaciones/Volumen")
+         FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+         WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+           AND report_dt = (SELECT report_dt FROM params)
+           AND "Epigrafe" = 2002)
+        >=
+        (SELECT SUM("Numero de operaciones/Volumen")
+         FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+         WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+           AND report_dt = (SELECT report_dt FROM params)
+           AND "Epigrafe" = 20021)
+::TEXT AS result
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.04. 2002≥20022' AS validation_check,
+   (
+        SELECT COALESCE(SUM("Numero de operaciones/Volumen"), 0)
+        FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+        WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+          AND report_dt = (SELECT report_dt FROM params)
+          AND "Epigrafe" = 2002
+    )
+    >=
+    (
+        SELECT COALESCE(SUM("Numero de operaciones/Volumen"), 0)
+        FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+        WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+          AND report_dt = (SELECT report_dt FROM params)
+          AND "Epigrafe" = 20022
+    )
+::TEXT AS result
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.05. 2002≤20021+20022' AS validation_check,
+        (SELECT SUM("Numero de operaciones/Volumen")
+         FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+         WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+           AND report_dt = (SELECT report_dt FROM params)
+           AND "Epigrafe" = 2002)
+        <=
+        (SELECT SUM("Numero de operaciones/Volumen")
+         FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+         WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+           AND report_dt = (SELECT report_dt FROM params)
+           AND "Epigrafe" in (20021,20022))
+::TEXT AS result
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.06. 2002≤200' AS validation_check,
+        (SELECT SUM("Numero de operaciones/Volumen")
+         FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+         WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+           AND report_dt = (SELECT report_dt FROM params)
+           AND "Epigrafe" = 2002)
+        <=
+        (SELECT SUM("Numero de operaciones/Volumen")
+         FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+         WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+           AND report_dt = (SELECT report_dt FROM params)
+           AND "Epigrafe" = 200)
+::TEXT AS result
+
+UNION ALL
+
+--REPORTED FIGURES-----------------------------------------------------------------------------------------------------------------------------------------
+
+SELECT 
+    '03 - REPORTED FIGURES - 03.01. Number of total cards issued by resident PSP (200)' AS validation_check,
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 200
+
+UNION ALL
+
+SELECT 
+    '03 - REPORTED FIGURES - 03.02. Number of total cards issued by resident PSP with cash functionality (deposits & withdrawals) (2001)' AS validation_check,
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 2001
+
+UNION ALL
+
+SELECT 
+    '03 - REPORTED FIGURES - 03.03. Number of total cards issued by resident PSP with either debit or credit functionality (2002)' AS validation_check,
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 2002
+
+UNION ALL
+
+SELECT 
+    '03 - REPORTED FIGURES - 03.04. Number of debit cards issued by resident PSP (20021)' AS validation_check,
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 20021
+
+UNION ALL
+
+SELECT 
+    '03 - REPORTED FIGURES - 03.05. Number of debit cards broke down by payment regime (200211)' AS validation_check,
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 200211
+
+UNION ALL
+
+SELECT 
+    '03 - REPORTED FIGURES - 03.06. Number of cards issued by resident PSP - Contactless (2005)' AS validation_check,
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl2
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 2005
+
+ )AS validation_summary
+ORDER BY validation_check;
