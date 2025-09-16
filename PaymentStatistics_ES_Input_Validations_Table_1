@@ -1,0 +1,172 @@
+WITH params AS (
+    SELECT 
+        DATE '2025-06-30' AS report_dt, 
+        DATE '2025-09-12' AS snapshot_dt
+)
+
+-- Begin validations
+SELECT * FROM (
+
+    SELECT 
+        '01 - GENERAL CHECKS - 01.01. Check number of rows' AS validation_check,
+        COUNT(*)::TEXT AS result
+from TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.02. Check that ENTIDAD is always W0322893I which refers to TRBs CIF' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                   AND ENTIDAD = 'W0322893I'
+                )
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.03. Check that reporting period is not null' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+                WHERE report_dt = (SELECT report_dt FROM params)
+                 AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                AND PERIODO is not null
+                )
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.04. Check that Table (Cuadro) is always "1"' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND cuadro is not null
+    AND cuadro = 1
+                )
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.05. Check that Período is always YYYYMM' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND periodo is not null
+    AND periodo = '202506'
+                )
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.06. Check that Epigraph is always 102' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND "Epigrafe" is not null
+    AND "Epigrafe" = 102
+                )
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.07. Check that GEO is empty, as required by Deloitte' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND geo is null
+                )
+            THEN 'TRUE'
+            ELSE 'FALSE'
+        END
+    )::TEXT AS result   
+UNION ALL
+
+SELECT 
+    '02 - REPORTED FIGURES - 02.01. Total number of payment accounts (102)' AS validation_check,
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from TEAMS_PRD.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl1
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 102
+ )AS validation_summary
+ORDER BY validation_check;
