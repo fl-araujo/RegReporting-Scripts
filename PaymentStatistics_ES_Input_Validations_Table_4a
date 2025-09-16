@@ -1,11 +1,9 @@
 WITH params AS (
     SELECT 
         DATE '2025-06-30' AS report_dt, 
-        DATE '2025-08-31' AS snapshot_dt
+        DATE '2025-09-13' AS snapshot_dt
 )
-
-SELECT * FROM (
-
+--GENERAL CHECKS-----------------------------------------------------------------------------------------------------------------------------------------
     SELECT 
         '01 - GENERAL CHECKS - 01.01. Check number of rows' AS validation_check,
         COUNT(*)::TEXT AS result
@@ -32,8 +30,8 @@ SELECT
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
                    AND ENTIDAD = 'W0322893I'
                 )
-            THEN 'TRUE'
-            ELSE 'FALSE'
+            THEN 'true'
+            ELSE 'false'
         END
     )::TEXT AS result
 
@@ -56,8 +54,8 @@ SELECT
                  AND snapshot_dt = (SELECT snapshot_dt FROM params)
                 AND PERIODO is not null
                 )
-            THEN 'TRUE'
-            ELSE 'FALSE'
+            THEN 'true'
+            ELSE 'false'
         END
     )::TEXT AS result
 
@@ -81,15 +79,15 @@ SELECT
       AND cuadro is not null
     AND cuadro = '4a'
                 )
-            THEN 'TRUE'
-            ELSE 'FALSE'
+            THEN 'true'
+            ELSE 'false'
         END
     )::TEXT AS result
 
 UNION ALL
 
 SELECT 
-    '01 - GENERAL CHECKS - 01.05. Check that GEO is populated and within the expected values' AS validation_check,
+    '01 - GENERAL CHECKS - 01.05. Check that Pais Terminal is populated and within the expected values for Card Payments and Withdrawals' AS validation_check,
     (
         CASE 
             WHEN
@@ -97,24 +95,49 @@ SELECT
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
                  WHERE report_dt = (SELECT report_dt FROM params)
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                   AND "Epigrafe" in (41,412,4121,41211,412111,4121111,41213,41214,41216,41217,41218,412183,412184,412185,4122,41221,41223,41225,41226,41227,412271,412274,412275,412276,412277,42,422,4221,42211,42213,42214,42216,42217,42218,422182,422183,422184,4222,42221,42223,42224,42225,422252,422253,422254,422255,51,511)
                 ) 
             =
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
     WHERE report_dt = (SELECT report_dt FROM params)
       AND snapshot_dt = (SELECT snapshot_dt FROM params)
-      AND geo is not null
-      and geo in ('AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','G1')
-                )
-            THEN 'TRUE'
-            ELSE 'FALSE'
+      and "Pais terminal" is not null
+      and "Pais terminal" in ('AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','G1','GR','HR','HU','IE','IS','IT','LI','LT','LU','LV','MT','NL','NO','PL','PT','RO','SE','SI','SK'))
+            THEN 'true'
+            ELSE 'false'
         END
     )::TEXT AS result
 
 UNION ALL
 
 SELECT 
-    '01 - GENERAL CHECKS - 01.06. Check that Período is always 202506' AS validation_check,
+    '01 - GENERAL CHECKS - 01.06. Check that Pais Terminal is empty for Transfers and Direct Debits' AS validation_check,
+    (
+        CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                   AND "Epigrafe" in (2,21,212,2122,21223,212231,2123,21231,22,3,31,312,313)
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
+      AND "Pais terminal" is null
+)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+
+UNION ALL
+
+SELECT 
+    '01 - GENERAL CHECKS - 01.07. Check that Período is always 202506' AS validation_check,
     (
         CASE 
             WHEN
@@ -131,252 +154,15 @@ SELECT
       AND periodo is not null
     AND periodo = '202506'
                 )
-            THEN 'TRUE'
-            ELSE 'FALSE'
+            THEN 'true'
+            ELSE 'false'
         END
     )::TEXT AS result
-
-    UNION ALL
-
--- Checks on Transfers
-
-    SELECT 
-        '02 - TRANSFERS - 02.01. Check total rows with transfers (out & in)',
-        COUNT(*)::TEXT AS result
-from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-    WHERE report_dt = (SELECT report_dt FROM params)
-      AND snapshot_dt = (SELECT snapshot_dt FROM params)
-      AND "Epigrafe" in (21,212,2122,21223,2123,21231,22)
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.02. Check total number of outcoming transfers (epigraph 21)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 21
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.03. Check total number of outcoming transfers, electronically initiated (epigraph 212)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 212
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.04. Check total number of outcoming transfers, electronically initiated, inidividually initiated (epigraph 2122)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 2122
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.05. Check total number of outcoming transfers, electronically initiated, inidividually initiated, through mobile payment solution (epigraph 21223)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 21223
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.06. Check total number of outcoming transfers, electronically initiated, inidividually initiated, through mobile payment solution and P2P (epigraph 212231)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 212231
-    
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.07. Check total number of outcoming transfers, electronically initiated, remote (epigraph 2123)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 2123
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.08. Check total number of outcoming transfers, electronically initiated, remote, SCA (epigraph 21231)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 21231
-
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.09. Check total number of incoming transfers (epigraph 22)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 22)
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.10. Check total amount of outcoming transfers (epigraph 21)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 21
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.11. Check total amount of outcoming transfers, electronically initiated (epigraph 212)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 212
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.12. Check total amount of outcoming transfers, electronically initiated, inidividually initiated (epigraph 2122)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 2122
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.13. Check total amount of outcoming transfers, electronically initiated, inidividually initiated, through mobile payment solution (epigraph 21223)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 21223
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.14. Check total amount of outcoming transfers, electronically initiated, inidividually initiated, through mobile payment solution and P2P (epigraph 212231)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 212231
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.15. Check total amount of outcoming transfers, electronically initiated, remote (epigraph 2123)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 2123
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.16. Check total amount of outcoming transfers, electronically initiated, remote, SCA (epigraph 21231)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 21231
-
-
-UNION ALL
-
-    SELECT 
-        '02 - TRANSFERS - 02.17. Check total amount of incoming transfers (epigraph 22)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 22
 
 UNION ALL
 
 SELECT
-    '02 - TRANSFERS - 02.18. Check that 02.02 = 02.03 = 02.04 = 02.05 = 02.07 = 02.08 and > 02.06 (total number of transfers is the same accross epigraphs, except for P2P)' AS validation_check,
-    (
-        CASE 
-            WHEN SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" ELSE 0 END) =
-                 SUM(CASE WHEN "Epigrafe" = 212 THEN "Numero de operaciones/Volumen" ELSE 0 END)
-             AND
-                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" ELSE 0 END) =
-                 SUM(CASE WHEN "Epigrafe" = 2122 THEN "Numero de operaciones/Volumen" ELSE 0 END)
-             AND
-                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" ELSE 0 END) =
-                 SUM(CASE WHEN "Epigrafe" = 21223 THEN "Numero de operaciones/Volumen" ELSE 0 END)
-             AND
-                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" ELSE 0 END) =
-                 SUM(CASE WHEN "Epigrafe" = 2123 THEN "Numero de operaciones/Volumen" ELSE 0 END)
-             AND
-                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" ELSE 0 END) =
-                 SUM(CASE WHEN "Epigrafe" = 21231 THEN "Numero de operaciones/Volumen" ELSE 0 END)
-             AND
-                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" ELSE 0 END) >
-                 SUM(CASE WHEN "Epigrafe" = 212231 THEN "Numero de operaciones/Volumen" ELSE 0 END)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (21,212,2122,21223,2123,21231)
-
-UNION ALL
-
-SELECT
-    '02 - TRANSFERS - 02.19. Check that 02.10 = 02.11 = 02.12 = 02.13 = 02.15 = 02.16 and > 02.14 (total amount of transfers is the same accross epigraphs, except for P2P)' AS validation_check,
-    (
-        CASE 
-            WHEN SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" ELSE 0 END) =
-                 SUM(CASE WHEN "Epigrafe" = 212 THEN "Importe" ELSE 0 END)
-             AND
-                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" ELSE 0 END) =
-                 SUM(CASE WHEN "Epigrafe" = 2122 THEN "Importe" ELSE 0 END)
-             AND
-                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" ELSE 0 END) =
-                 SUM(CASE WHEN "Epigrafe" = 21223 THEN "Importe" ELSE 0 END)
-             AND
-                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" ELSE 0 END) =
-                 SUM(CASE WHEN "Epigrafe" = 2123 THEN "Importe" ELSE 0 END)
-             AND
-                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" ELSE 0 END) =
-                 SUM(CASE WHEN "Epigrafe" = 21231 THEN "Importe" ELSE 0 END)
-             AND
-                 SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" ELSE 0 END) >
-                 SUM(CASE WHEN "Epigrafe" = 212231 THEN "Importe" ELSE 0 END)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (21,212,2122,21223,2123,21231)
-
-UNION ALL
-
-SELECT
-    '02 - TRANSFERS - 02.20. Check that Transfer Scheme is either SEPA or SEPAI in epigraph 21231' AS validation_check,
+    '01 - GENERAL CHECKS - 01.08. Check that Transfer Scheme is either SEPA or SEPAI in epigraph 21231' AS validation_check,
     (
         CASE
             WHEN
@@ -394,244 +180,15 @@ SELECT
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
                    AND "Epigrafe" = 21231
                    AND "Desglose Regimen" IN ('SEPA', 'SEPAI'))
-            THEN 'TRUE'
-            ELSE 'FALSE'
+            THEN 'true'
+            ELSE 'false'
         END
     )::TEXT AS result
 
 UNION ALL
 
--- Checks on Direct Debits
-
-    SELECT 
-        '03 - DIRECT DEBITS - 03.01. Check total rows with direct debits',
-        COUNT(*)::TEXT AS result
-from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-    WHERE report_dt = (SELECT report_dt FROM params)
-      AND snapshot_dt = (SELECT snapshot_dt FROM params)
-      AND "Epigrafe" in (31,312,313)
-
-UNION ALL
-
-    SELECT 
-        '03 - DIRECT DEBITS - 03.02. Check total number of direct debits (epigraph 31)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 31
-
-UNION ALL
-
-    SELECT 
-        '03 - DIRECT DEBITS - 03.03. Check total number of direct debits, individually initiated (epigraph 312)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 312
-
-UNION ALL
-
-    SELECT 
-        '03 - DIRECT DEBITS - 03.04. Check total number of direct debits, electronic mandate consent (epigraph 313)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 313
-
-UNION ALL
-
-    SELECT 
-        '03 - DIRECT DEBITS - 03.05. Check total amount of direct debits (epigraph 31)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 31
-
-UNION ALL
-
-    SELECT 
-        '03 - DIRECT DEBITS - 03.06. Check total amount of direct debits, individually initiated (epigraph 312)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 312
-
-UNION ALL
-
-    SELECT 
-        '03 - DIRECT DEBITS - 03.07. Check total amount of direct debits, electronic mandate consent (epigraph 313)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 313
-
-UNION ALL
-
 SELECT
-    '03 - DIRECT DEBITS - 03.08. Check that 03.02, 03.03 and 03.04 are the same (total number of direct debits is the same accross epigraphs)' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 31 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 312 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 31 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 313 THEN "Numero de operaciones/Volumen" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (31, 312, 313)
-
-UNION ALL
-
-SELECT
-    '03 - DIRECT DEBITS - 03.09. Check that 03.05, 03.06 and 03.07 are the same (total amount of direct debits is the same accross epigraphs)' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 31 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 312 THEN "Importe" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 31 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 313 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (31, 312, 313)
-
-UNION ALL
-
--- Checks on Cards
-
-    SELECT 
-        '04 - CARDS - 04.01. Check total rows with card payments',
-        COUNT(*)::TEXT AS result
-from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-    WHERE report_dt = (SELECT report_dt FROM params)
-      AND snapshot_dt = (SELECT snapshot_dt FROM params)
-      AND "Epigrafe" in (41,412,4121,41211,412111,4121111,41213,41214,41216,41217,41218,412183,412184,412185,4122,41221,41223,41225,41226,41227,412271,412274,412275,412276,412277,42,422,4221,42211,42214,42216,42217,42218,422182,422183,422184,4222,42221,42223,42224,42225,422252,422253,422254,422255)
-
-UNION ALL
-
-    SELECT 
-        '04 - CARDS - 04.02. Check total number of card payments sent (epigraph 41)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 41
-
-UNION ALL
-
-    SELECT 
-        '04 - CARDS - 04.03. Check total amount of card payments sent (epigraph 41)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 41
-
-    UNION ALL
-
-    SELECT 
-        '04 - CARDS - 04.04. Check total number of card payments received (epigraph 42)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 42
-
-UNION ALL
-
-    SELECT 
-        '04 - CARDS - 04.05. Check total amount of card payments received (epigraph 42)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 42
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.06. Check total number & amount of card payments sent (epigraph 41) are electronically initiated (epigraph 412)' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 41 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 412 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 412 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (41,412)
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.07. Check total number & amount of card payments sent (epigraph 41) equal the sum of remote & non-remote (epigraphs 4121 & 4122)' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 41 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (41,4121,4122)
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.08. Check total number & amount of card payments sent, both remote & non-remote (epigraphs 4121 & 4122), equals the sum of SCA & non-SCA in each sub-epigraphs (41216,41217,41225, 41226)' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41216 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 41217 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41216 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 41217 THEN "Importe" END), 0)
-             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41225 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 41226 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41225 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 41226 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (4121,4122,41216,41217,41225, 41226)
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.09. Check that all card payments are made with debit card (epigraph 41 equals 41214+41223)' AS validation_check,
+    '01 - GENERAL CHECKS - 01.09. Check that all card payments are made with debit card (epigraph 41 equals 41214+41223)' AS validation_check,
     (
         CASE
             WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 41 THEN "Numero de operaciones/Volumen" END), 0) =
@@ -639,8 +196,8 @@ SELECT
              AND
                  COALESCE(SUM(CASE WHEN "Epigrafe" = 41 THEN "Importe" END), 0) =
                  COALESCE(SUM(CASE WHEN "Epigrafe" = 41214 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 41223 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
+            THEN 'true'
+            ELSE 'false'
         END
     )::TEXT AS result
 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
@@ -651,180 +208,7 @@ WHERE report_dt = (SELECT report_dt FROM params)
 UNION ALL
 
 SELECT
-    '04 - CARDS - 04.10. Check that 4121 ≥ 41211 ≥ 412111 ≥ 4121111' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Numero de operaciones/Volumen" END), 0) >=
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41211 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Importe" END), 0) >=
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41211 THEN "Importe" END), 0)
-             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 41211 THEN "Numero de operaciones/Volumen" END), 0) >=
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 412111 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41211 THEN "Importe" END), 0) >=
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 412111 THEN "Importe" END), 0)
-             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 412111 THEN "Numero de operaciones/Volumen" END), 0) >=
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 4121111 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 412111 THEN "Importe" END), 0) >=
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 4121111 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (4121,41211,412111,4121111)
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.11. Check that 41217 = 41218 = 412183 + 412184 + 412185' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 41217 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41218 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41217 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41218 THEN "Importe" END), 0)
-             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 41217 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 412183 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 412184 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 412185 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41217 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 412183 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 412184 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 412185 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (41217,41218,412183,412184,412185)
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.12. Check that 4122 ≥ 41221' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Numero de operaciones/Volumen" END), 0) >=
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41221 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Importe" END), 0) >=
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41221 THEN "Importe" END), 0)
-             
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (4122,41221)
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.13. Check that 41226 = 41227 = 412271 + 412274 + 412275 + 412276 + 412277' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 41226 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41227 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41226 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41227 THEN "Importe" END), 0)
-             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 41227 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 412271 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 412274 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 412275 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 412276 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 412277 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 41227 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 412271 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 412274 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 412275 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 412276 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 412277 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (41226,41227,412271,412274,412275,412276,412277)
-
-
-
-
-
-
-
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.14. Check total number & amount of card payments received (epigraph 42) are electronically initiated (epigraph 422)' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 42 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 422 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 422 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (42,422)
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.15. Check total number & amount of card payments received (epigraph 42) equal the sum of remote & non-remote (epigraphs 4221 & 4222)' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 42 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 4221 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 4222 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 4221 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 4222 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (42,4221,4222)
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.16. Check total number & amount of card payments sent, both remote & non-remote (epigraphs 4221 & 4222), equals the sum of SCA & non-SCA in each sub-epigraphs (42216,42217,42223,42224)' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4221 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42216 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 42217 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 4221 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42216 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 42217 THEN "Importe" END), 0)
-             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4222 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42223 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 42224 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 4222 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42223 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 42224 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (4221,4222,42216,42217,42223,42224)
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.17. Check that all card payments are made with debit card (epigraph 42 equals 42214+42221)' AS validation_check,
+    '01 - GENERAL CHECKS - 01.10. Check that all card payments (received) are made with debit card (epigraph 42 equals 42214+42221)' AS validation_check,
     (
         CASE
             WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 42 THEN "Numero de operaciones/Volumen" END), 0) =
@@ -832,8 +216,8 @@ SELECT
              AND
                  COALESCE(SUM(CASE WHEN "Epigrafe" = 42 THEN "Importe" END), 0) =
                  COALESCE(SUM(CASE WHEN "Epigrafe" = 42214 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 42221 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
+            THEN 'true'
+            ELSE 'false'
         END
     )::TEXT AS result
 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
@@ -844,57 +228,7 @@ WHERE report_dt = (SELECT report_dt FROM params)
 UNION ALL
 
 SELECT
-    '04 - CARDS - 04.18. Check that 42217 = 42218 = 422182 + 422183 + 422184' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 42217 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42218 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42217 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42218 THEN "Importe" END), 0)
-             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 42217 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 422182 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 422183 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 422184 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42217 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 422182 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 422183 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 422184 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (42217,42218,422182,422183,422184)
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.19. Check that 42224 = 42225 = 422252 + 422253 + 422254 + 422255' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 42224 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42225 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42224 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42225 THEN "Importe" END), 0)
-             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 42225 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 422252 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 422253 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 422254 THEN "Numero de operaciones/Volumen" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 422255 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 42225 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 422252 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 422253 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 422254 THEN "Importe" END), 0)+COALESCE(SUM(CASE WHEN "Epigrafe" = 422255 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (42224,42225,422252,422253,422254,422255)
-
-UNION ALL
-
-SELECT
-    '04 - CARDS - 04.20. Check that Card Scheme is VISA in epigraphs 41214,41216,41217,41223,41225,41226,42214,42216,42217,42221,42223 and 42224' AS validation_check,
+    '01 - GENERAL CHECKS - 01.11. Check that Card Scheme is VISA in epigraphs 41214,41216,41217,41223,41225,41226,42214,42216,42217,42221,42223 and 42224' AS validation_check,
     (
         CASE
             WHEN
@@ -910,87 +244,15 @@ SELECT
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
                    AND "Epigrafe" in (41214,41216,41217,41223,41225,41226,42214,42216,42217,42221,42223,42224)
                    AND "Desglose Regimen" = 'VISA')
-            THEN 'TRUE'
-            ELSE 'FALSE'
+            THEN 'true'
+            ELSE 'false'
         END
     )::TEXT AS result
 
 UNION ALL
 
--- Checks on Withdrawals
-
-    SELECT 
-        '05 - WITHDRAWALS - 05.01. Check total rows with withdrawals',
-        COUNT(*)::TEXT AS result
-from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-    WHERE report_dt = (SELECT report_dt FROM params)
-      AND snapshot_dt = (SELECT snapshot_dt FROM params)
-      AND "Epigrafe" in (51,511)
-
-UNION ALL
-
-    SELECT 
-        '05 - WITHDRAWALS - 05.02. Check total number of withdrawals (epigraph 51)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 51
-
-UNION ALL
-
-    SELECT 
-        '05 - WITHDRAWALS - 05.03. Check total number of withdrawals with debit card (epigraph 511)',
-    SUM ("Numero de operaciones/Volumen")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 511
-
-UNION ALL
-
-    SELECT 
-        '05 - WITHDRAWALS - 05.04. Check total amount of withdrawals (epigraph 51)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 51
-
-UNION ALL
-
-    SELECT 
-        '05 - WITHDRAWALS - 05.05. Check total amount of withdrawals with debit card (epigraph 511)',
-    SUM ("Importe")::TEXT AS result
- from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
-    AND report_dt = (SELECT report_dt FROM params)
-    AND "Epigrafe" = 511
-
-UNION ALL
-
 SELECT
-    '05 - WITHDRAWALS - 05.06. Check that 05.02 = 05.03 and 05.04 = 05.05 (total number and amount of withdrawals are the same accross epigraphs)' AS validation_check,
-    (
-        CASE
-            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 51 THEN "Numero de operaciones/Volumen" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 511 THEN "Numero de operaciones/Volumen" END), 0)
-             AND
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 51 THEN "Importe" END), 0) =
-                 COALESCE(SUM(CASE WHEN "Epigrafe" = 511 THEN "Importe" END), 0)
-            THEN 'TRUE'
-            ELSE 'FALSE'
-        END
-    )::TEXT AS result
-FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
-  AND "Epigrafe" IN (51,511)
-
-UNION ALL
-
-SELECT
-    '05 - WITHDRAWALS - 05.06. Check that Card Scheme is VISA in epigraph 511' AS validation_check,
+    '01 - GENERAL CHECKS - 01.12. Check that Card Scheme is VISA in epigraph 511' AS validation_check,
     (
         CASE
             WHEN
@@ -1006,7 +268,849 @@ SELECT
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
                    AND "Epigrafe" = 511
                    AND "Desglose Regimen" = 'VISA')
-            THEN 'TRUE'
-            ELSE 'FALSE'
+            THEN 'true'
+            ELSE 'false'
         END
     )::TEXT AS result
+
+UNION ALL
+--BDE VALIDATIONS------------------------------------------------------------------------------------------------------------------------------------------
+SELECT
+    '02 - BDE VALIDATIONS - 02.01. Check that epigraph 21 >= 214' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" END), 0) >= COALESCE(SUM(CASE WHEN "Epigrafe" = 214 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" END), 0) >= COALESCE(SUM(CASE WHEN "Epigrafe" = 214 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (21, 214)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.02. Check that epigraph 212 = 2123 + 2124' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 212 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 2123 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 2124 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 212 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 2123 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 2124 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (212, 2123, 2124)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.03. Check that epigraph 31 = 311 + 312' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 31 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 311 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 312 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 31 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 311 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 312 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (31, 311, 312)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.04. Check that epigraph 4121 = 41214 + 41215' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41214 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41215 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41214 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41215 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (4121, 41214, 41215)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.05. Check that epigraph 4121 = 41216 + 41217' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41216 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41217 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41216 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41217 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (4121, 41216, 41217)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.06. Check that epigraph 41218 = 41217' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 41218 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41217 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 41218 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41217 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (41218, 41217)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.07. Check that epigraph 4122 = 41223 + 41224' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41223 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41224 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41223 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41224 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (4122, 41223, 41224)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.08. Check that epigraph 4122 = 41225 + 41226' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41225 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41226 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41225 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41226 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (4122, 41225, 41226)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.09. Check that epigraph 41227 = 41226' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 41227 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41226 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 41227 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41226 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (41227, 41226)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.10. Check that epigraph 4221 = 42214 + 42215' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4221 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42214 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 42215 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4221 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42214 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 42215 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (4221, 42214, 42215)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.11. Check that epigraph 4221 = 42216 + 42217' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4221 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42216 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 42217 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4221 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42216 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 42217 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (4221, 42216, 42217)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.12. Check that epigraph 42218 = 42217' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 42218 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42217 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 42218 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42217 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (42218, 42217)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.13. Check that epigraph 4222 = 42223 + 42224' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4222 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42223 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 42224 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4222 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42223 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 42224 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (4222, 42223, 42224)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.14. Check that epigraph 42225 = 42224' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 42225 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42224 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 42225 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42224 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (42225, 42224)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.15. Check that epigraph 21 = 211 + 212 + 213' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 21 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 211 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 212 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 213 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 21 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 211 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 212 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 213 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (21, 211, 212, 213)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.16. Check that epigraph 212 = 2121 + 2122' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 212 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 2121 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 2122 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 212 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 2121 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 2122 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (212, 2121, 2122)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.17. Check that epigraph 2122 = 21221 + 21222 + 21223' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 2122 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 21221 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 21222 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 21223 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 2122 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 21221 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 21222 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 21223 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (2122, 21221, 21222, 21223)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.18. Check that epigraph 21223 >= 212231' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 21223 THEN "Numero de operaciones/Volumen" END), 0) >= COALESCE(SUM(CASE WHEN "Epigrafe" = 212231 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 21223 THEN "Importe" END), 0) >= COALESCE(SUM(CASE WHEN "Epigrafe" = 212231 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (21223, 212231)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.19. Check that epigraph 2123 = 21231 + 21232' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 2123 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 21231 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 21232 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 2123 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 21231 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 21232 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (2123, 21231, 21232)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.20. Check that epigraph 31 = 313 + 314' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 31 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 313 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 314 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 31 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 313 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 314 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (31, 313, 314)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.21. Check that epigraph 41 = 411 + 412' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 41 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 411 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 41 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 411 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (41, 411, 412)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.22. Check that epigraph 412 = 4121 + 4122' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 412 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 412 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (412, 4121, 4122)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.23. Check that epigraph 4121 = 41211 + 41212 + 41213' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41211 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41212 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41213 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4121 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41211 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41212 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41213 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (4121, 41211, 41212, 41213)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.24. Check that epigraph 41211 >= 412111' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 41211 THEN "Numero de operaciones/Volumen" END), 0) >= COALESCE(SUM(CASE WHEN "Epigrafe" = 412111 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 41211 THEN "Importe" END), 0) >= COALESCE(SUM(CASE WHEN "Epigrafe" = 412111 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (41211, 412111)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.25. Check that epigraph 412111 >= 4121111' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 412111 THEN "Numero de operaciones/Volumen" END), 0) >= COALESCE(SUM(CASE WHEN "Epigrafe" = 4121111 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 412111 THEN "Importe" END), 0) >= COALESCE(SUM(CASE WHEN "Epigrafe" = 4121111 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (412111, 4121111)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.26. Check that epigraph 41218 = 412181 + 412182 + 412183 + 412184 + 412185' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 41218 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 412181 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412182 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412183 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412184 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412185 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 41218 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 412181 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412182 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412183 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412184 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412185 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (41218, 412181, 412182, 412183, 412184, 412185)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.27. Check that epigraph 4122 = 41221 + 41222' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41221 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41222 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4122 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 41221 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 41222 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (4122, 41221, 41222)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.28. Check that epigraph 41221 >= 412211' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 41221 THEN "Numero de operaciones/Volumen" END), 0) >= COALESCE(SUM(CASE WHEN "Epigrafe" = 412211 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 41221 THEN "Importe" END), 0) >= COALESCE(SUM(CASE WHEN "Epigrafe" = 412211 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (41221, 412211)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.29. Check that epigraph 41227 = 412271 + 412272 + 412273 + 412274 + 412275 + 412276 + 412277' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 41227 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 412271 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412272 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412273 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412274 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412275 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412276 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412277 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 41227 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 412271 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412272 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412273 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412274 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412275 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412276 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 412277 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (41227, 412271, 412272, 412273, 412274, 412275, 412276, 412277)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.30. Check that epigraph 42 = 421 + 422' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 42 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 421 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 42 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 421 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (42, 421, 422)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.31. Check that epigraph 422 = 4221 + 4222' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 422 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 4221 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 4222 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 422 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 4221 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 4222 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (422, 4221, 4222)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.32. Check that epigraph 4221 = 42211 + 42212 + 42213' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4221 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42211 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 42212 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 42213 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4221 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42211 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 42212 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 42213 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (4221, 42211, 42212, 42213)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.33. Check that epigraph 42218 = 422181 + 422182 + 422183 + 422184' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 42218 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 422181 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422182 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422183 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422184 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 42218 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 422181 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422182 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422183 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422184 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (42218, 422181, 422182, 422183, 422184)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.34. Check that epigraph 4222 = 42221 + 42222' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 4222 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42221 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 42222 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 4222 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 42221 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 42222 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (4222, 42221, 42222)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.35. Check that epigraph 42225 = 422251 + 422252 + 422253 + 422254 + 422255' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 42225 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 422251 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422252 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422253 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422254 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422255 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 42225 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 422251 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422252 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422253 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422254 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 422255 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (42225, 422251, 422252, 422253, 422254, 422255)
+
+UNION ALL
+
+SELECT
+    '02 - BDE VALIDATIONS - 02.36. Check that epigraph 51 = 511 + 512' AS validation_check,
+    (
+        CASE
+            WHEN COALESCE(SUM(CASE WHEN "Epigrafe" = 51 THEN "Numero de operaciones/Volumen" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 511 THEN "Numero de operaciones/Volumen" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 512 THEN "Numero de operaciones/Volumen" END), 0)
+             AND COALESCE(SUM(CASE WHEN "Epigrafe" = 51 THEN "Importe" END), 0) = COALESCE(SUM(CASE WHEN "Epigrafe" = 511 THEN "Importe" END), 0) + COALESCE(SUM(CASE WHEN "Epigrafe" = 512 THEN "Importe" END), 0)
+            THEN 'true'
+            ELSE 'false'
+        END
+    )::TEXT AS result
+FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+WHERE report_dt = (SELECT report_dt FROM params) AND snapshot_dt = (SELECT snapshot_dt FROM params) AND "Epigrafe" IN (51, 511, 512)
+
+
+--REPORTED FIGURES-----------------------------------------------------------------------------------------------------------------------------------------
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.01. Check total number of outcoming transfers (epigraph 21)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 21
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.02. Check total number of outcoming transfers, electronically initiated (epigraph 212)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 212
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.03. Check total number of outcoming transfers, electronically initiated, inidividually initiated (epigraph 2122)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 2122
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.04. Check total number of outcoming transfers, electronically initiated, inidividually initiated, through mobile payment solution (epigraph 21223)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 21223
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.05. Check total number of outcoming transfers, electronically initiated, inidividually initiated, through mobile payment solution and P2P (epigraph 212231)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 212231
+    
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.06. Check total number of outcoming transfers, electronically initiated, remote (epigraph 2123)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 2123
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.07. Check total number of outcoming transfers, electronically initiated, remote, SCA (epigraph 21231)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 21231
+
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.08. Check total number of incoming transfers (epigraph 22)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 22
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.09. Check total amount of outcoming transfers (epigraph 21)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 21
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.10. Check total amount of outcoming transfers, electronically initiated (epigraph 212)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 212
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.11. Check total amount of outcoming transfers, electronically initiated, inidividually initiated (epigraph 2122)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 2122
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.12. Check total amount of outcoming transfers, electronically initiated, inidividually initiated, through mobile payment solution (epigraph 21223)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 21223
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.13. Check total amount of outcoming transfers, electronically initiated, inidividually initiated, through mobile payment solution and P2P (epigraph 212231)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 212231
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.14. Check total amount of outcoming transfers, electronically initiated, remote (epigraph 2123)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 2123
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.15. Check total amount of outcoming transfers, electronically initiated, remote, SCA (epigraph 21231)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 21231
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.16. Check total amount of incoming transfers (epigraph 22)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 22
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.17. Check total number of direct debits (epigraph 31)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 31
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.18. Check total number of direct debits, individually initiated (epigraph 312)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 312
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.19. Check total number of direct debits, electronic mandate consent (epigraph 313)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 313
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.20. Check total amount of direct debits (epigraph 31)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 31
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.21. Check total amount of direct debits, individually initiated (epigraph 312)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 312
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.22. Check total amount of direct debits, electronic mandate consent (epigraph 313)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 313
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.23. Check total number of card payments sent (epigraph 41)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 41
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.24. Check total amount of card payments sent (epigraph 41)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 41
+
+    UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.25. Check total number of card payments received (epigraph 42)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 42
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.26. Check total amount of card payments received (epigraph 42)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 42
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.27. Check total number of withdrawals (epigraph 51)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 51
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.28. Check total number of withdrawals with debit card (epigraph 511)',
+    SUM ("Numero de operaciones/Volumen")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 511
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.29. Check total amount of withdrawals (epigraph 51)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 51
+
+UNION ALL
+
+    SELECT 
+        '03 - REPORTED FIGURES - 03.30. Check total amount of withdrawals with debit card (epigraph 511)',
+    SUM ("Importe")::TEXT AS result
+ from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_payment_statistics_tbl4a
+  WHERE snapshot_dt = (SELECT snapshot_dt FROM params)
+    AND report_dt = (SELECT report_dt FROM params)
+    AND "Epigrafe" = 511
