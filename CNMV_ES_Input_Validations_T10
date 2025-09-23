@@ -2,7 +2,7 @@
 WITH params AS (
     SELECT 
         DATE '2025-06-30' AS report_dt, 
-        DATE '2025-09-18' AS snapshot_dt
+        DATE '2025-09-22' AS snapshot_dt
 )
 
 -- Begin Validation Checks
@@ -344,37 +344,48 @@ SELECT '17. Check that Complex indicator is either YES or NO' AS validation_chec
 
 UNION ALL
 
-SELECT '18. Check that total number of orders in "Advertencia - Solo Ejecución" equals total Purchases' AS validation_check,
+SELECT '18. Check that total NUMBER of orders in "Advertencia - Solo Ejecución" + "Advertencia - No conveniente" equals total Purchases' AS validation_check,
         (CASE 
             WHEN
-                (SELECT COUNT(*) "Compras - Nº operaciones"
+                (SELECT sum ("Compras - Nº operaciones")
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
                  WHERE report_dt = (SELECT report_dt FROM params)
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
-                ) 
+                )
+                
             =
-                (SELECT COUNT(*) "Advertencia 'Sólo ejecución' - Número"
+                (SELECT SUM("Advertencia 'Sólo ejecución' - Número")
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
                  WHERE report_dt = (SELECT report_dt FROM params)
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
                 )
-            THEN 'true'
-            ELSE 'false'
-        END
-    )::TEXT AS result
-
-UNION ALL
-
-SELECT '19. Check that total amount of orders in "Advertencia - Solo Ejecución" equals total Purchases' AS validation_check,
-        (CASE 
-            WHEN
-                (SELECT COUNT(*) "Compras - Importe"
+                +
+                (SELECT SUM("Advertencia 'No conveniente' - Número")
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
                  WHERE report_dt = (SELECT report_dt FROM params)
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
-                ) 
+               )    
+            THEN 'true'
+            ELSE 'false'
+        END
+    )
+
+UNION ALL
+
+SELECT '19. Check that total AMOUNT of orders in "Advertencia - Solo Ejecución" + "Advertencia - No conveniente" equals total Purchases' AS validation_check,
+        (CASE 
+            WHEN
+                (SELECT SUM("Compras - Importe")
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params))
             =
-                (SELECT COUNT(*) "Advertencia 'Sólo ejecución' - Importe"
+                (SELECT SUM("Advertencia 'Sólo ejecución' - Importe")
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params))
+                   +
+                (SELECT SUM("Advertencia 'No conveniente' - Importe")
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
                  WHERE report_dt = (SELECT report_dt FROM params)
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
@@ -382,53 +393,11 @@ SELECT '19. Check that total amount of orders in "Advertencia - Solo Ejecución"
             THEN 'true'
             ELSE 'false'
         END
-    )::TEXT AS result
+    )
 
 UNION ALL
 
-SELECT '20. Check that total number of orders in "Advertencia - No Conveniente" is <= total Purchases' AS validation_check,
-        (CASE 
-            WHEN
-                (SELECT COUNT(*) "Compras - Nº operaciones"
-                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
-                 WHERE report_dt = (SELECT report_dt FROM params)
-                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
-                ) 
-            >=
-                (SELECT COUNT(*) "Advertencia 'No conveniente' - Número"
-                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
-                 WHERE report_dt = (SELECT report_dt FROM params)
-                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
-                )
-            THEN 'true'
-            ELSE 'false'
-        END
-    )::TEXT AS result
-
-UNION ALL
-
-SELECT '21. Check that total amount of orders in "Advertencia - No Conveniente" is <= total Purchases' AS validation_check,
-        (CASE 
-            WHEN
-                (SELECT COUNT(*) "Compras - Importe"
-                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
-                 WHERE report_dt = (SELECT report_dt FROM params)
-                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
-                ) 
-            >=
-                (SELECT COUNT(*) "Advertencia 'No conveniente' - Importe"
-                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
-                 WHERE report_dt = (SELECT report_dt FROM params)
-                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
-                )
-            THEN 'true'
-            ELSE 'false'
-        END
-    )::TEXT AS result
-
-UNION ALL
-
-SELECT '22. Check that remaining fields are empty' AS validation_check,
+SELECT '20. Check that remaining fields are empty' AS validation_check,
         (CASE 
             WHEN
                 (SELECT COUNT(*)
@@ -436,7 +405,7 @@ SELECT '22. Check that remaining fields are empty' AS validation_check,
                  WHERE report_dt = (SELECT report_dt FROM params)
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
                 ) 
-            >=
+            =
                 (SELECT COUNT(*)
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
                  WHERE report_dt = (SELECT report_dt FROM params)
