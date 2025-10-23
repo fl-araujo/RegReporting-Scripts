@@ -1,0 +1,102 @@
+WITH ValidationChecks AS (
+    -- Define the report_dt and snapshot_dt values
+    WITH params AS (
+        SELECT
+            '2025-07-31' AS report_dt,
+            '2025-08-24' AS snapshot_dt
+    )
+
+    --Recon 41401.09
+    SELECT
+        '41401.09' AS validation_check,
+        CAST(SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 11", 1, 15) AS NUMERIC)) / 100 AS NUMERIC(38, 2)) AS result
+    FROM
+        teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
+    WHERE
+        snapshot_dt = (SELECT snapshot_dt FROM params) AND report_dt = (SELECT report_dt FROM params)
+
+    UNION ALL
+
+    --Recon 41401.13
+    SELECT
+        '41401.13' AS validation_check,
+        CAST(SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 11", 1, 15) AS NUMERIC)) / 100 AS NUMERIC(38, 2)) AS result
+    FROM
+        teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
+    WHERE
+        snapshot_dt = (SELECT snapshot_dt FROM params) AND report_dt = (SELECT report_dt FROM params)
+
+    UNION ALL
+
+    --Recon 41401.17
+    SELECT
+        '41401.17' AS validation_check,
+    (
+        -- First sum from table ...4140153
+        SELECT SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 10", 1, 15) AS NUMERIC))
+        FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
+        WHERE snapshot_dt = (SELECT snapshot_dt FROM params) AND report_dt = (SELECT report_dt FROM params)
+    )
+    +
+    (
+        -- Second sum from table ...4140151
+        SELECT SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 10", 1, 15) AS NUMERIC))
+        FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
+        WHERE snapshot_dt = (SELECT snapshot_dt FROM params) AND report_dt = (SELECT report_dt FROM params)
+    ) AS result
+
+UNION ALL
+    
+    --Recon 41410.03
+        SELECT '41410.03' AS validation_check,
+        SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 3", 1, 15) AS NUMERIC))
+        FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141002
+        WHERE snapshot_dt = (SELECT snapshot_dt FROM params) AND report_dt = (SELECT report_dt FROM params)
+
+UNION ALL
+
+    --Recon 41410.09
+    SELECT
+        '41410.09' AS validation_check,
+        CAST(SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 7", 1, 15) AS NUMERIC)) / 100 AS NUMERIC(38, 2)) AS result
+    FROM
+        teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
+    WHERE
+        snapshot_dt = (SELECT snapshot_dt FROM params) AND report_dt = (SELECT report_dt FROM params)
+    AND
+        "REC-INIZIO-RESTO VALUE 5" = 06
+
+UNION ALL
+
+    --Recon 41410.15
+    SELECT
+        '41410.15' AS validation_check,
+        CAST(SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 7", 1, 15) AS NUMERIC)) / 100 AS NUMERIC(38, 2)) AS result
+    FROM
+        teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
+    WHERE
+        snapshot_dt = (SELECT snapshot_dt FROM params) AND report_dt = (SELECT report_dt FROM params)
+    AND
+        "REC-INIZIO-RESTO VALUE 5" = 10
+
+UNION ALL
+
+    --Recon 41419.10
+    SELECT
+        '41419.10' AS validation_check,
+        CAST(SUM(CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 14", 1, 15) AS NUMERIC)) / 100 AS NUMERIC(38, 2)) AS result
+    FROM
+        teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
+    WHERE
+        snapshot_dt = (SELECT snapshot_dt FROM params) AND report_dt = (SELECT report_dt FROM params)
+
+UNION ALL
+
+    --Recon 41419.22
+    SELECT '41419.22' AS validation_check,
+        COUNT(DISTINCT "REC-INIZIO-RAPP-VALORE") AS result
+        FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
+        WHERE snapshot_dt = (SELECT snapshot_dt FROM params) AND report_dt = (SELECT report_dt FROM params)
+)
+SELECT *
+FROM ValidationChecks;
