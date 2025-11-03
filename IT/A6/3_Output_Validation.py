@@ -14,7 +14,7 @@ THRESHOLD_VALUE = 0.50 # New constant for the filter
 # File Paths
 INPUT_EXCEL_FILE = '02.IT_Reporting/IT_A6/input_files/TotaleVoci[20250731A6].xlsx'
 INPUT_ERRORS_FILE = '02.IT_Reporting/IT_A6/input_files/036749_20250731_20251002-161912_AcquisizioneErrori.xlsx' 
-OUTPUT_EXCEL_FILE = f'02.IT_Reporting/IT_A6/output_files/A6 - Recon - {REPORT_DATE} - v7.xlsx' 
+OUTPUT_EXCEL_FILE = f'02.IT_Reporting/IT_A6/output_files/A6 - Recon - {REPORT_DATE} - v1.xlsx' 
 
 # Column Mappings
 JOIN_KEY_COL = 'A'
@@ -515,12 +515,7 @@ def run_reconciliation_script():
         # The first 5 columns from the Excel file: A, B, C, D, E (Description)
         excel_info_cols = excel_data.columns.drop(clean_key_col_name).tolist()
         
-        # New desired order:
-        # 1. VALUE TRB
-        # 2. VARIANCE (ABSOLUTE)
-        # 3. VARIANCE (PERCENTAGE)
-        # 4. 1. Non-existent ISINs (00032E)
-        # 5. 2. Transactions < 0.50€
+       
         final_data_cols = [
             SNOWFLAKE_VALUE_COL, 
             VAR_ABS_COL, 
