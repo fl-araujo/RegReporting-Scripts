@@ -9,12 +9,12 @@ import numpy as np
 # Execution Parameters
 REPORT_DATE = '2025-07-31'
 SNAPSHOT_DATE = '2025-08-24'
-THRESHOLD_VALUE = 0.50 # New constant for the filter
+THRESHOLD_VALUE = 0.50 
 
 # File Paths
 INPUT_EXCEL_FILE = '02.IT_Reporting/IT_A6/input_files/TotaleVoci[20250731A6].xlsx'
 INPUT_ERRORS_FILE = '02.IT_Reporting/IT_A6/input_files/036749_20250731_20251002-161912_AcquisizioneErrori.xlsx' 
-OUTPUT_EXCEL_FILE = f'02.IT_Reporting/IT_A6/output_files/A6 - Recon - {REPORT_DATE} - v1.xlsx' 
+OUTPUT_EXCEL_FILE = f'02.IT_Reporting/IT_A6/output_files/A6 - Recon - {REPORT_DATE} - v10.xlsx' 
 
 # Column Mappings
 JOIN_KEY_COL = 'A'
@@ -145,44 +145,159 @@ def execute_snowflake_query(query, conn_params):
         if conn:
             conn.close()
 
-def get_filtered_snowflake_values(conn_params):
+def get_excluded_isin_details(conn_params):
     """
-    Reads the errors file, filters ONLY for TARGET_ERROR_CODE ('00032E3'), 
-    and uses the complete list of VALORE ATTRIBUTO to filter ALL relevant Snowflake queries.
-    Applies TRIM() to the target Snowflake column to ensure robust matching.
+    Reads the errors file to get the list of excluded ISINs, and then queries 
+    Snowflake to get the detailed breakdown (ISIN, FTO, and Aggregated Value) for the
+    'Excluded Instruments' sheet.
+    
+    Returns:
+        tuple: (DataFrame for filtered Snowflake values, DataFrame of ISINs/FTO/Aggregated Value)
     """
     if not os.path.exists(INPUT_ERRORS_FILE):
         raise FileNotFoundError(f"Errors input file not found: {INPUT_ERRORS_FILE}.")
     
     print(f"Reading and filtering errors from {INPUT_ERRORS_FILE}...")
     
-    # Read only the necessary columns
+    # Read errors and get the unique list of ISINs (VALORE ATTRIBUTO)
     error_data = pd.read_excel(INPUT_ERRORS_FILE, 
                                sheet_name=0, 
-                               usecols=[ERROR_CODE_COL, ERROR_VALUE_COL, ERROR_FTO_COL])
+                               usecols=[ERROR_CODE_COL, ERROR_VALUE_COL])
     
-    error_data.columns = [ERROR_CODE_COL, ERROR_VALUE_COL, ERROR_FTO_COL]
+    error_data.columns = [ERROR_CODE_COL, ERROR_VALUE_COL]
 
-    # Filter ONLY for the target error code
+    # Filter ONLY for the target error code and clean values
     filtered_errors = error_data[error_data[ERROR_CODE_COL] == TARGET_ERROR_CODE].copy()
-    
-    # Clean the filter values (Valore Attributo)
     filtered_errors[ERROR_VALUE_COL] = filtered_errors[ERROR_VALUE_COL].astype(str).str.strip()
     
-    # Get the complete list of VALORE ATTRIBUTO
-    valore_attributo_list = filtered_errors[ERROR_VALUE_COL].tolist()
+    # Get the complete unique list of VALORE ATTRIBUTO (ISINs)
+    valore_attributo_list = filtered_errors[ERROR_VALUE_COL].unique().tolist()
     
     if not valore_attributo_list:
         print(f"Warning: No '{ERROR_VALUE_COL}' found for error '{TARGET_ERROR_CODE}'. Filtered column will be zero/NULL.")
         id_list_str = "''" 
     else:
         id_list_str = ", ".join([f"'{i}'" for i in valore_attributo_list])
-        print(f"Applying {len(valore_attributo_list)} filters (from error {TARGET_ERROR_CODE}) to all relevant Snowflake queries.")
+        print(f"Found {len(valore_attributo_list)} unique excluded ISINs.")
     
-    print("Executing filtered Snowflake query (All checks filtered)...")
-
-    # Dynamic SQL: Use the single id_list_str for all queries that use "REC-INIZIO-RESTO VALUE 4" as the filter field.
-    # TRIM is applied to the appropriate column in each WHERE clause.
+    # --- 2. Build and execute the detailed query for the new sheet ---
+    
+    # MODIFICATION: The subqueries are placed within a CTE (DetailedBase), 
+    # and a final SELECT aggregates the Amount by ISIN and FTO.
+    DETAILED_ISIN_QUERY = f"""
+    WITH params AS (
+        SELECT
+            '{REPORT_DATE}' AS report_dt,
+            '{SNAPSHOT_DATE}' AS snapshot_dt
+    ),
+    DetailedBase AS (
+        (
+            -- FTO 4140151 (Recon 41401.09 / 41401.17 - Value 11)
+            SELECT 
+                TRIM("REC-INIZIO-RESTO VALUE 4") AS "ISINs",
+                '4140151' AS "FTO",
+                CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 11", 1, 15) AS NUMERIC) / 100 AS "Amount"
+            FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
+            WHERE snapshot_dt = (SELECT snapshot_dt FROM params) 
+              AND report_dt = (SELECT report_dt FROM params) 
+              AND OUTPUT IS NOT NULL 
+              AND TRIM("REC-INIZIO-RESTO VALUE 4") IN ({id_list_str})
+            
+            UNION ALL
+            
+            -- FTO 4140151 (For Value 10 part of 41401.17)
+            SELECT 
+                TRIM("REC-INIZIO-RESTO VALUE 4") AS "ISINs",
+                '4140151 (Value 10)' AS "FTO",
+                CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 10", 1, 15) AS NUMERIC) / 100 AS "Amount"
+            FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140151
+            WHERE snapshot_dt = (SELECT snapshot_dt FROM params) 
+              AND report_dt = (SELECT report_dt FROM params) 
+              AND OUTPUT IS NOT NULL 
+              AND TRIM("REC-INIZIO-RESTO VALUE 4") IN ({id_list_str})
+        )
+        UNION ALL
+        (
+            -- FTO 4140153 (Recon 41401.13 / 41401.17 - Value 11)
+            SELECT 
+                TRIM("REC-INIZIO-RESTO VALUE 4") AS "ISINs",
+                '4140153' AS "FTO",
+                CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 11", 1, 15) AS NUMERIC) / 100 AS "Amount"
+            FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
+            WHERE snapshot_dt = (SELECT snapshot_dt FROM params) 
+              AND report_dt = (SELECT report_dt FROM params) 
+              AND OUTPUT IS NOT NULL 
+              AND TRIM("REC-INIZIO-RESTO VALUE 4") IN ({id_list_str})
+              
+            UNION ALL
+            
+            -- FTO 4140153 (For Value 10 part of 41401.17)
+            SELECT 
+                TRIM("REC-INIZIO-RESTO VALUE 4") AS "ISINs",
+                '4140153 (Value 10)' AS "FTO",
+                CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 10", 1, 15) AS NUMERIC) / 100 AS "Amount"
+            FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4140153
+            WHERE snapshot_dt = (SELECT snapshot_dt FROM params) 
+              AND report_dt = (SELECT report_dt FROM params) 
+              AND OUTPUT IS NOT NULL 
+              AND TRIM("REC-INIZIO-RESTO VALUE 4") IN ({id_list_str})
+        )
+        UNION ALL
+        (
+            -- FTO 4141002 (Recon 41410.03) - Note: Filter field is VALUE 1
+            SELECT 
+                TRIM("REC-INIZIO-RESTO VALUE 1") AS "ISINs",
+                '4141002' AS "FTO",
+                CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 3", 1, 15) AS NUMERIC) AS "Amount" -- No / 100 here
+            FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141002
+            WHERE snapshot_dt = (SELECT snapshot_dt FROM params) 
+              AND report_dt = (SELECT report_dt FROM params) 
+              AND OUTPUT IS NOT NULL
+              AND TRIM("REC-INIZIO-RESTO VALUE 1") IN ({id_list_str})
+        )
+        UNION ALL
+        (
+            -- FTO 4141051 (Recon 41410.09 / 41410.15) - Note: Filter field is VALUE 3
+            SELECT 
+                TRIM("REC-INIZIO-RESTO VALUE 3") AS "ISINs",
+                '4141051' AS "FTO",
+                CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 7", 1, 15) AS NUMERIC) / 100 AS "Amount"
+            FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_4141051
+            WHERE snapshot_dt = (SELECT snapshot_dt FROM params) 
+              AND report_dt = (SELECT report_dt FROM params) 
+              AND OUTPUT IS NOT NULL
+              AND TRIM("REC-INIZIO-RESTO VALUE 3") IN ({id_list_str})
+        )
+        UNION ALL
+        (
+            -- FTO 0162504 (Recon 41419.10 / 41419.22) - Note: Filter field is VALUE 6
+            SELECT 
+                TRIM("REC-INIZIO-RESTO VALUE 6") AS "ISINs",
+                '0162504' AS "FTO",
+                CAST(SUBSTRING("REC-INIZIO-RESTO VALUE 14", 1, 15) AS NUMERIC) / 100 AS "Amount"
+            FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
+            WHERE snapshot_dt = (SELECT snapshot_dt FROM params) 
+              AND report_dt = (SELECT report_dt FROM params) 
+              AND OUTPUT IS NOT NULL
+              AND TRIM("REC-INIZIO-RESTO VALUE 6") IN ({id_list_str})
+        )
+    )
+    SELECT 
+        "ISINs",
+        "FTO",
+        SUM("Amount") AS "Amount"
+    FROM DetailedBase
+    GROUP BY 1, 2
+    ORDER BY 1, 2;
+    """
+    
+    # Execute the detailed query
+    print("Executing detailed Snowflake query for **aggregated** excluded ISINs breakdown (ISIN, FTO, Amount)...")
+    detailed_isin_data = execute_snowflake_query(DETAILED_ISIN_QUERY, conn_params)
+    
+    # --- 3. Build and execute the summary query for the main sheet (this remains mostly the same) ---
+    
+    # Dynamic SQL for the main reconciliation sheet filter column:
     FILTERED_SNOWFLAKE_QUERY = f"""
     WITH params AS (
         SELECT
@@ -264,11 +379,11 @@ def get_filtered_snowflake_values(conn_params):
     GROUP BY validation_check;
     """
     
-    # Execute the new query
+    # Execute the summary query
     filtered_snowflake_data = execute_snowflake_query(FILTERED_SNOWFLAKE_QUERY, conn_params)
     filtered_snowflake_data.columns = ['sf_join_key', SNOWFLAKE_FILTERED_VALUE_COL]
 
-    return filtered_snowflake_data
+    return filtered_snowflake_data, detailed_isin_data 
 
 def get_snowflake_below_threshold_values(conn_params):
     """
@@ -383,7 +498,6 @@ def apply_excel_formatting(df, writer, excel_translate_header, column_c_header, 
     
     # Identify the columns for specific formatting
     wrap_cols = [excel_translate_header, TRANSLATE_DEST_COL]
-    # DIFFERENCE_COL has been removed from the list of number_cols
     number_cols = [column_c_header, SNOWFLAKE_VALUE_COL, SNOWFLAKE_FILTERED_VALUE_COL, SNOWFLAKE_BELOW_THRESHOLD_COL, VAR_ABS_COL] 
     percentage_cols = [VAR_PCT_COL]
     
@@ -410,6 +524,25 @@ def apply_excel_formatting(df, writer, excel_translate_header, column_c_header, 
         
     # Apply wrap format to the header row (row 0)
     worksheet.set_row(0, None, wrap_format)
+    
+def write_excluded_instruments_sheet(isin_df, writer, sheet_name='Excluded Instruments'):
+    """Creates a new sheet with the detailed DataFrame of excluded ISINs, FTO, and Amount."""
+    workbook = writer.book
+    
+    # Write to Excel
+    isin_df.to_excel(writer, sheet_name=sheet_name, index=False)
+    
+    # Define formats
+    number_format = workbook.add_format({'num_format': '#,##0.00'}) 
+    text_format = workbook.add_format({'num_format': '@'}) 
+    
+    # Apply formatting
+    worksheet = writer.sheets[sheet_name]
+    
+    # Set column widths
+    worksheet.set_column('A:A', 25, text_format) # ISINs
+    worksheet.set_column('B:B', 20, text_format) # FTO
+    worksheet.set_column('C:C', 18, number_format) # Amount
 
 
 # --- 3. MAIN PROCESS ---
@@ -420,6 +553,8 @@ def run_reconciliation_script():
 
     # Define the column name for the clean key locally
     clean_key_col_name = 'join_key_clean'
+    # Initialize DataFrame to hold excluded ISIN details
+    detailed_excluded_isins_df = pd.DataFrame() 
 
     try:
         # 3.1 Data Acquisition (Excel)
@@ -447,9 +582,9 @@ def run_reconciliation_script():
         print(f"Fetching Snowflake data for values below {THRESHOLD_VALUE}...")
         snowflake_data_threshold = get_snowflake_below_threshold_values(SNOWFLAKE_CONN_PARAMS)
         
-        # 3.5 Data Acquisition (Filtered Snowflake)
-        print("Processing errors file and fetching filtered Snowflake data...")
-        snowflake_data_filtered = get_filtered_snowflake_values(SNOWFLAKE_CONN_PARAMS)
+        # 3.5 Data Acquisition (Filtered Snowflake) - MODIFIED to capture detailed ISIN data
+        print("Processing errors file and fetching filtered/detailed Snowflake data...")
+        snowflake_data_filtered, detailed_excluded_isins_df = get_excluded_isin_details(SNOWFLAKE_CONN_PARAMS)
         
         # 3.6 Data Preparation and Merge
         print("Preparing data and merging based on codes...")
@@ -480,12 +615,6 @@ def run_reconciliation_script():
         # Values from Column F (Original Snowflake)
         value_f = pd.to_numeric(combined_data[SNOWFLAKE_VALUE_COL], errors='coerce')
         
-        # Values from Filtered/Threshold columns. 
-        # Note: DIFFERENCE_COL calculation has been removed as requested.
-        # value_i = pd.to_numeric(combined_data[SNOWFLAKE_FILTERED_VALUE_COL], errors='coerce').fillna(0)
-        # value_h = pd.to_numeric(combined_data[SNOWFLAKE_BELOW_THRESHOLD_COL], errors='coerce').fillna(0)
-        # combined_data[DIFFERENCE_COL] = value_i + value_h # REMOVED
-
         # --- Original Variance (VAR_ABS_COL and VAR_PCT_COL) ---
         combined_data[VAR_ABS_COL] = value_f - value_c
         combined_data[VAR_PCT_COL] = np.where(
@@ -495,8 +624,6 @@ def run_reconciliation_script():
         )
         
         # --- Filtered Variance (Calculated but will be deleted from final output) ---
-        # Keeping this calculation as intermediate steps are often used for debugging, 
-        # but the columns will be dropped immediately below.
         combined_data[VAR_ABS_FILTERED_COL] = (pd.to_numeric(combined_data[SNOWFLAKE_FILTERED_VALUE_COL], errors='coerce').fillna(0) + pd.to_numeric(combined_data[SNOWFLAKE_BELOW_THRESHOLD_COL], errors='coerce').fillna(0)) - value_c
         combined_data[VAR_PCT_FILTERED_COL] = np.where(
             value_c != 0, 
@@ -512,10 +639,7 @@ def run_reconciliation_script():
         ])
 
         # --- Reorder Columns for final output ---
-        # The first 5 columns from the Excel file: A, B, C, D, E (Description)
         excel_info_cols = excel_data.columns.drop(clean_key_col_name).tolist()
-        
-       
         final_data_cols = [
             SNOWFLAKE_VALUE_COL, 
             VAR_ABS_COL, 
@@ -524,10 +648,7 @@ def run_reconciliation_script():
             SNOWFLAKE_BELOW_THRESHOLD_COL
         ]
 
-        # Combine info columns and data columns
         final_cols = excel_info_cols + final_data_cols
-
-        # Reindex the DataFrame
         combined_data = combined_data[final_cols]
         
         # 3.8 Output Generation
@@ -538,12 +659,16 @@ def run_reconciliation_script():
         print(f"Writing final output to {OUTPUT_EXCEL_FILE} and applying formatting...")
         
         writer = pd.ExcelWriter(OUTPUT_EXCEL_FILE, engine='xlsxwriter')
-        sheet_name = 'Reconciliation'
         
-        combined_data.to_excel(writer, sheet_name=sheet_name, index=False)
+        # Sheet 1: Reconciliation Data
+        sheet_name_recon = 'Reconciliation'
+        combined_data.to_excel(writer, sheet_name=sheet_name_recon, index=False)
+        apply_excel_formatting(combined_data, writer, excel_translate_header, column_c_header, sheet_name=sheet_name_recon)
         
-        # Apply the formatting function
-        apply_excel_formatting(combined_data, writer, excel_translate_header, column_c_header, sheet_name=sheet_name)
+        # Sheet 2: Excluded Instruments 
+        sheet_name_excluded = 'Excluded Instruments'
+        print(f"Writing detailed **aggregated** excluded ISINs/FTO/Value to sheet '{sheet_name_excluded}'...")
+        write_excluded_instruments_sheet(detailed_excluded_isins_df, writer, sheet_name=sheet_name_excluded)
         
         writer.close()
         
