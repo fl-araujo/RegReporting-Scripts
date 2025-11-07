@@ -4,17 +4,18 @@ from datetime import datetime
 from tabulate import tabulate
 
 # ---------------- PARAMETERS ----------------
-REFERENCE_DATE = "2025-08-31"  # Now in ISO format (YYYY-MM-DD)
-SNAPSHOT_DATE = "2025-09-04"
-EXCEL_FILE = "mec_validations/input_files/Aug-25 Manual subledger Accounting.xlsx"
-EXCEL_SHEET = "Manual"
-OUTPUT_FILE = "mec_validations/output_files/validation_output.txt"
+REFERENCE_DATE = "2025-10-31"  # Now in ISO format (YYYY-MM-DD)
+SNAPSHOT_DATE = "2025-11-06"
+EXCEL_FILE = "01.DE_Reporting/de_mec_validations/input_files/Oct-25 Manual subledger Accounting_v3.xlsx"
+EXCEL_SHEET = "Branches"
+OUTPUT_FILE = "01.DE_Reporting/de_mec_validations/output_files/validation_output.txt"
 
 # ---------------- HELPER FUNCTION ----------------
 def clean_ids(series):
+    # This helper function is correctly used only for ID columns (G/L_Account, SAP_ID, CP_ID)
     return (
         series.dropna()
-        .apply(lambda x: str(int(x)) if isinstance(x, (int, float)) and not pd.isna(x) else str(x))
+        .apply(lambda x: str(int(x)) if isinstance(x, (int, float)) and pd.notna(x) else str(x))
         .astype(str)  # Ensure all values are strings before using .str accessor
         .str.strip()
         .unique()
@@ -40,9 +41,19 @@ df_excel = pd.read_excel(EXCEL_FILE, sheet_name=EXCEL_SHEET)
 
 # Convert ISO reference date to Excel format for filtering
 excel_reference_date = convert_iso_to_excel_format(REFERENCE_DATE)
-df_excel_filtered = df_excel[df_excel["Reference_Date"] == excel_reference_date]
+# Use .copy() to prevent SettingWithCopyWarning
+df_excel_filtered = df_excel[df_excel["Reference_Date"] == excel_reference_date].copy()
 
-# Extract relevant columns
+# ** FIX: Data Type Conversion for Amount Columns **
+# Ensure the amount columns are numeric (float) to allow subtraction.
+amount_cols = ["Exposure_Amt_Original_CCY", "Exposure_Amt_EUR"]
+for col in amount_cols:
+    # Use pd.to_numeric with errors='coerce' to turn non-numeric values into NaN
+    df_excel_filtered[col] = pd.to_numeric(df_excel_filtered[col], errors='coerce')
+    # Fill any resulting NaN values with 0 for consistent calculation if needed
+    df_excel_filtered[col] = df_excel_filtered[col].fillna(0)
+
+# Extract relevant ID columns
 excel_accounts = clean_ids(df_excel_filtered["G/L_Account"])
 excel_sap_ids = clean_ids(df_excel_filtered["SAP_ID_Counterparty"])
 excel_cp_ids = clean_ids(df_excel_filtered["CP_ID"])
@@ -128,6 +139,7 @@ excel_only_rows = []
 # Check 1: Exposure Amount Consistency for EUR
 df_eur = df_excel_filtered[df_excel_filtered["Original_CCY"] == "EUR"].copy()
 
+# This comparison now works because both columns are confirmed to be numeric floats
 mismatches = df_eur[df_eur["Exposure_Amt_Original_CCY"] != df_eur["Exposure_Amt_EUR"]].copy()
 check1_result = "✅ True" if len(mismatches) == 0 else "❌ False"
 excel_only_rows.append([
@@ -206,11 +218,11 @@ excel_only_rows.append([
 # If Encumbrance_Indicator is 'encumbered', Type_Encumbrance must not be empty
 
 invalid_type_encumbrance_rows = df_excel_filtered[
-    ((df_excel_filtered["Encumbrance_Indicator"] == "unencumbered") & 
-     (df_excel_filtered["Type_Encumbrance"].notna()) & 
+    ((df_excel_filtered["Encumbrance_Indicator"] == "unencumbered") &
+     (df_excel_filtered["Type_Encumbrance"].notna()) &
      (df_excel_filtered["Type_Encumbrance"] != "")) |
-    ((df_excel_filtered["Encumbrance_Indicator"] == "encumbered") & 
-     ((df_excel_filtered["Type_Encumbrance"].isna()) | 
+    ((df_excel_filtered["Encumbrance_Indicator"] == "encumbered") &
+     ((df_excel_filtered["Type_Encumbrance"].isna()) |
       (df_excel_filtered["Type_Encumbrance"] == "")))
 ].copy()
 
@@ -250,6 +262,7 @@ excel_only_details = []
 if not mismatches.empty:
     mismatched_table_rows = []
     for _, row in mismatches.iterrows():
+        # This subtraction now works because both columns are numeric
         diff = row["Exposure_Amt_Original_CCY"] - row["Exposure_Amt_EUR"]
         mismatched_table_rows.append([
             format_id_pair(row["G/L_Account"], row["SAP_ID_Counterparty"]),
@@ -281,7 +294,7 @@ if not invalid_start_rows.empty:
     )
     excel_only_details.append("\nInvalid Start_Date Records:")
     excel_only_details.append(invalid_start_table)
-    
+
 # Table for invalid End_Date records
 if not invalid_end_rows.empty:
     end_table_rows = []
@@ -298,7 +311,7 @@ if not invalid_end_rows.empty:
     )
     excel_only_details.append("\nInvalid End_Date Records:")
     excel_only_details.append(invalid_end_table)
-    
+
 # Table for invalid Maturity_Type / End_Date records
 if not invalid_maturity_rows.empty:
     maturity_table_rows = []
@@ -316,7 +329,7 @@ if not invalid_maturity_rows.empty:
     )
     excel_only_details.append("\nInvalid Maturity_Type / End_Date Records:")
     excel_only_details.append(invalid_maturity_table)
-    
+
 # Table for invalid Encumbrance_Indicator records
 if not invalid_encumbrance_rows.empty:
     encumbrance_table_rows = []
@@ -349,7 +362,7 @@ if not invalid_type_encumbrance_rows.empty:
     )
     excel_only_details.append("\nInvalid Type_Encumbrance Records:")
     excel_only_details.append(invalid_type_encumbrance_table)
-    
+
 # Table for invalid Country_region records
 if not invalid_country_rows.empty:
     country_table_rows = []
@@ -378,13 +391,13 @@ if not df_non_eur.empty:
     for _, row in df_non_eur.iterrows():
         original_amt = row["Exposure_Amt_Original_CCY"]
         eur_amt = row["Exposure_Amt_EUR"]
-        
+
         # Calculate ratio (Original_CCY / EUR), handle division by zero
         if pd.notna(eur_amt) and eur_amt != 0:
             ratio = original_amt / eur_amt
         else:
             ratio = "N/A"
-        
+
         non_eur_table_rows.append([
             format_id_pair(row["G/L_Account"], row["SAP_ID_Counterparty"]),
             row["Original_CCY"],
@@ -392,7 +405,7 @@ if not df_non_eur.empty:
             eur_amt,
             f"{ratio:.6f}" if ratio != "N/A" else ratio
         ])
-    
+
     non_eur_table = tabulate(
         non_eur_table_rows,
         headers=["G/L_Account_SAP_ID", "Original_CCY", "Exposure_Amt_Original_CCY", "Exposure_Amt_EUR", "Ratio (Original/EUR)"],
