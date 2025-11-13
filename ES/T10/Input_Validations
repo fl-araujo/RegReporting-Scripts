@@ -1,20 +1,21 @@
---Test Input File
+--Quality test
+
 WITH params AS (
     SELECT 
         DATE '2025-06-30' AS report_dt, 
-        DATE '2025-09-22' AS snapshot_dt
+        DATE '2025-11-12' AS snapshot_dt
 )
 
 -- Begin Validation Checks
 SELECT '01. Check number of rows' AS validation_check, COUNT(*) ::TEXT AS result
-    from teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
-WHERE report_dt = (SELECT report_dt FROM params)
-  AND snapshot_dt = (SELECT snapshot_dt FROM params)
+    FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
+    WHERE report_dt = (SELECT report_dt FROM params)
+      AND snapshot_dt = (SELECT snapshot_dt FROM params)
 
 UNION ALL
 
-SELECT '02. Check that Entidad is always HQ'AS validation_check,
-        (CASE 
+SELECT '02. Check that Entidad is always HQ' AS validation_check,
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -36,7 +37,7 @@ SELECT '02. Check that Entidad is always HQ'AS validation_check,
 UNION ALL
 
 SELECT '03. Check ISIN Length' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -58,7 +59,7 @@ SELECT '03. Check ISIN Length' AS validation_check,
 UNION ALL
 
 SELECT '04. Check that Instrument Type is within expected values' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -80,7 +81,7 @@ SELECT '04. Check that Instrument Type is within expected values' AS validation_
 UNION ALL
 
 SELECT '05. Check that Currency is 3 characters long' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -102,7 +103,7 @@ SELECT '05. Check that Currency is 3 characters long' AS validation_check,
 UNION ALL
 
 SELECT '06. Check that Currency is not null' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -124,7 +125,7 @@ SELECT '06. Check that Currency is not null' AS validation_check,
 UNION ALL
 
 SELECT '07. Check that Instrument Issuer is not null' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -146,7 +147,7 @@ SELECT '07. Check that Instrument Issuer is not null' AS validation_check,
 UNION ALL
 
 SELECT '08. Check that Maturity is not null' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -168,7 +169,7 @@ SELECT '08. Check that Maturity is not null' AS validation_check,
 UNION ALL
 
 SELECT '10. Check that % of guaranteed capital is null' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -190,7 +191,7 @@ SELECT '10. Check that % of guaranteed capital is null' AS validation_check,
 UNION ALL
 
 SELECT '11. Check that % of target return not guaranteed is null' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -212,7 +213,7 @@ SELECT '11. Check that % of target return not guaranteed is null' AS validation_
 UNION ALL
 
 SELECT '12. Check that other descriptive data is populated for the expected product types (5,17,18,20,21,22,23,24,29)' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -235,7 +236,7 @@ SELECT '12. Check that other descriptive data is populated for the expected prod
 UNION ALL
 
 SELECT '13. Check that Linked is always NO' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -257,7 +258,7 @@ SELECT '13. Check that Linked is always NO' AS validation_check,
 UNION ALL
 
 SELECT '14. Check that Regulatory Risk Level is null' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -279,7 +280,7 @@ SELECT '14. Check that Regulatory Risk Level is null' AS validation_check,
 UNION ALL
 
 SELECT '15. Check that Internal Risk Level is within expected parameters' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -301,7 +302,7 @@ SELECT '15. Check that Internal Risk Level is within expected parameters' AS val
 UNION ALL
 
 SELECT '16. Check that Trading Market is within expected parameters' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -313,7 +314,7 @@ SELECT '16. Check that Trading Market is within expected parameters' AS validati
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
                  WHERE report_dt = (SELECT report_dt FROM params)
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
-                   and "Cotización" in ('CR','CO','CR','NC')
+                   and "Cotización" in ('CR','CO')
                 )
             THEN 'true'
             ELSE 'false'
@@ -323,7 +324,7 @@ SELECT '16. Check that Trading Market is within expected parameters' AS validati
 UNION ALL
 
 SELECT '17. Check that Complex indicator is either YES or NO' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*) 
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -344,15 +345,14 @@ SELECT '17. Check that Complex indicator is either YES or NO' AS validation_chec
 
 UNION ALL
 
-SELECT '18. Check that total NUMBER of orders in "Advertencia - Solo Ejecución" + "Advertencia - No conveniente" equals total Purchases' AS validation_check,
-        (CASE 
+SELECT '18. Check that total NUMBER of orders in Warnings ("advertencias") equals total Purchases' AS validation_check,
+       (CASE 
             WHEN
                 (SELECT sum ("Compras - Nº operaciones")
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
                  WHERE report_dt = (SELECT report_dt FROM params)
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
                 )
-                
             =
                 (SELECT SUM("Advertencia 'Sólo ejecución' - Número")
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -364,41 +364,67 @@ SELECT '18. Check that total NUMBER of orders in "Advertencia - Solo Ejecución"
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
                  WHERE report_dt = (SELECT report_dt FROM params)
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
-               )    
+                )
+                +
+                (SELECT SUM("Advertencia 'Sin información' - Número")
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                )
+                +
+                (SELECT SUM("Evaluación positiva (conveniencia o idoneidad) - Número" )
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params) 
+                )   
             THEN 'true'
             ELSE 'false'
         END
-    )
+    )::TEXT AS result
 
 UNION ALL
 
-SELECT '19. Check that total AMOUNT of orders in "Advertencia - Solo Ejecución" + "Advertencia - No conveniente" equals total Purchases' AS validation_check,
-        (CASE 
+SELECT '19. Check that total AMOUNT of orders in Warnings ("advertencias") equals total Purchases' AS validation_check,
+       (CASE 
             WHEN
                 (SELECT SUM("Compras - Importe")
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
                  WHERE report_dt = (SELECT report_dt FROM params)
-                   AND snapshot_dt = (SELECT snapshot_dt FROM params))
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                )
             =
                 (SELECT SUM("Advertencia 'Sólo ejecución' - Importe")
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
                  WHERE report_dt = (SELECT report_dt FROM params)
-                   AND snapshot_dt = (SELECT snapshot_dt FROM params))
-                   +
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                )
+                +
                 (SELECT SUM("Advertencia 'No conveniente' - Importe")
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
                  WHERE report_dt = (SELECT report_dt FROM params)
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
                 )
+                +
+                (SELECT SUM("Advertencia 'Sin información' - Importe")
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                )
+                +
+                (SELECT SUM("Evaluación positiva (conveniencia o idoneidad) - Importe" )
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params) 
+                )
             THEN 'true'
             ELSE 'false'
         END
-    )
+    )::TEXT AS result
 
 UNION ALL
 
 SELECT '20. Check that remaining fields are empty' AS validation_check,
-        (CASE 
+       (CASE 
             WHEN
                 (SELECT COUNT(*)
                  FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
@@ -411,18 +437,65 @@ SELECT '20. Check that remaining fields are empty' AS validation_check,
                  WHERE report_dt = (SELECT report_dt FROM params)
                    AND snapshot_dt = (SELECT snapshot_dt FROM params)
                    and "Compras - Primas pagadas/cobradas en opciones" is null
-                    and "Compras - Subtotal importe de operaciones de carteras gestionadas" is null
-                    and "Compras - Subtotal importe de operaciones de venta cruzada con otros productos financieros" is null
-                    and "Compras - Contrapartida cuenta propia" is null
-                    and "Ventas - Primas pagadas/cobradas en opciones" is null
-                    and "Ventas - Subtotal importe de operaciones de carteras gestionadas" is null
-                    and "Ventas - Contrapartida cuenta propia" is null
-                    and "Advertencia 'Sin información' - Número" is null
-                    and "Advertencia 'Sin información' - Importe" is null
-                    and "Evaluación positiva (conveniencia o idoneidad) - Número" is null
-                    and "Evaluación positiva (conveniencia o idoneidad) - Importe" is null
+                   and "Compras - Subtotal importe de operaciones de carteras gestionadas" is null
+                   and "Compras - Subtotal importe de operaciones de venta cruzada con otros productos financieros" is null
+                   and "Compras - Contrapartida cuenta propia" is null
+                   and "Ventas - Primas pagadas/cobradas en opciones" is null
+                   and "Ventas - Subtotal importe de operaciones de carteras gestionadas" is null
+                   and "Ventas - Contrapartida cuenta propia" is null
                 )
             THEN 'true'
             ELSE 'false'
         END
+    )::TEXT AS result
+        
+UNION ALL
+
+SELECT '21. Check that all structured bonds are COMPLEX' AS validation_check,
+        (CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                   and "Tipo de instrumento financiero. Clave" = 4
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                   and "Complejo: SI/NO" = 'SI'
+                   and "Tipo de instrumento financiero. Clave" = 4
+                )
+            THEN 'true'
+            ELSE 'false'
+        END
+
+    )::TEXT AS result
+
+UNION ALL
+
+SELECT '22. Check that IE00B4ND3602,IE00B4NCWG09,IE00B8HGT870,IE00B579F325,IE00BMTM6B32,XS2819843736,IE00BMTM6D55,JE00B588CD74,JE00BYQY3Z98,JE00B78CGV99,XS2819843900,FR0013416716 are structured bonds (4) and Complex' AS validation_check,
+        (CASE 
+            WHEN
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                   and "Código identificativo (ISIN, alternativo)" in ('IE00B4ND3602','IE00B4NCWG09','IE00B8HGT870','IE00B579F325','IE00BMTM6B32','XS2819843736','IE00BMTM6D55','JE00B588CD74','JE00BYQY3Z98','JE00B78CGV99','XS2819843900','FR0013416716')
+                   and "Tipo de instrumento financiero. Clave" = 4
+                ) 
+            =
+                (SELECT COUNT(*) 
+                 FROM teams_prd.regulatory_reporting_mart.mrt_snapshot__regulatory_reporting__es_t10
+                 WHERE report_dt = (SELECT report_dt FROM params)
+                   AND snapshot_dt = (SELECT snapshot_dt FROM params)
+                   and "Complejo: SI/NO" = 'SI'
+                   and "Código identificativo (ISIN, alternativo)" in ('IE00B4ND3602','IE00B4NCWG09','IE00B8HGT870','IE00B579F325','IE00BMTM6B32','XS2819843736','IE00BMTM6D55','JE00B588CD74','JE00BYQY3Z98','JE00B78CGV99','XS2819843900','FR0013416716')
+                )
+            THEN 'true'
+            ELSE 'false'
+        END
+
     )::TEXT AS result
