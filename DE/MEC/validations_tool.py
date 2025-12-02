@@ -26,8 +26,17 @@ def clean_ids(series):
 def format_id_pair(gl_account, sap_id):
     """Format G/L Account and SAP ID pair, avoiding scientific notation"""
     # Convert to string and handle potential float formatting
-    gl_str = str(int(float(gl_account))) if pd.notna(gl_account) else ""
-    sap_str = str(int(float(sap_id))) if pd.notna(sap_id) else ""
+    # The clean_ids function is designed to handle this, but we'll add robustness here too
+    try:
+        gl_str = str(int(float(gl_account))) if pd.notna(gl_account) else ""
+    except ValueError:
+        gl_str = str(gl_account)
+    
+    try:
+        sap_str = str(int(float(sap_id))) if pd.notna(sap_id) else ""
+    except ValueError:
+        sap_str = str(sap_id)
+
     return f"{gl_str}_{sap_str}"
 
 # ---------------- DATE CONVERSION HELPER ----------------
@@ -36,13 +45,22 @@ def convert_iso_to_excel_format(iso_date):
     dt = pd.to_datetime(iso_date, format="%Y-%m-%d")
     return dt.strftime("%d.%m.%Y")
 
-# ---------------- LOAD EXCEL ----------------
-df_excel = pd.read_excel(EXCEL_FILE, sheet_name=EXCEL_SHEET)
+# ---------------- LOAD EXCEL & PRE-FILTER VALIDATION (Check 8) ----------------
+# Load the raw dataframe
+df_excel_raw = pd.read_excel(EXCEL_FILE, sheet_name=EXCEL_SHEET)
 
-# Convert ISO reference date to Excel format for filtering
+# Convert ISO reference date to Excel format
 excel_reference_date = convert_iso_to_excel_format(REFERENCE_DATE)
-# Use .copy() to prevent SettingWithCopyWarning
-df_excel_filtered = df_excel[df_excel["Reference_Date"] == excel_reference_date].copy()
+
+# Check 8 (PRE-FILTER): Find rows in the raw data that do NOT match the expected Reference_Date
+check_date_mismatches = df_excel_raw[df_excel_raw["Reference_Date"] != excel_reference_date].copy()
+check8_result = "✅ True" if len(check_date_mismatches) == 0 else "❌ False"
+# Note: Check 8 result is calculated here but displayed later in excel_only_rows
+
+# Now, filter the data to be used for all subsequent checks (1-7)
+# This creates the filtered DataFrame (df_excel_filtered) that all other checks rely on.
+df_excel_filtered = df_excel_raw[df_excel_raw["Reference_Date"] == excel_reference_date].copy()
+
 
 # ** FIX: Data Type Conversion for Amount Columns **
 # Ensure the amount columns are numeric (float) to allow subtraction.
@@ -167,7 +185,7 @@ excel_only_rows.append([
 # Parse End_Date with European format (DD.MM.YYYY)
 df_excel_filtered["End_Date_Parsed"] = pd.to_datetime(df_excel_filtered["End_Date"], format="%d.%m.%Y", errors='coerce')
 
-invalid_end_rows = df_excel_filtered[df_excel_filtered["End_Date_Parsed"] <= ref_date_dt].copy()
+invalid_end_rows = df_excel_filtered[df_excel_filtered["End_Date_Parsed"].fillna(pd.Timestamp.min) <= ref_date_dt].copy()
 check3_result = "✅ True" if len(invalid_end_rows) == 0 else "❌ False"
 
 excel_only_rows.append([
@@ -219,11 +237,9 @@ excel_only_rows.append([
 
 invalid_type_encumbrance_rows = df_excel_filtered[
     ((df_excel_filtered["Encumbrance_Indicator"] == "unencumbered") &
-     (df_excel_filtered["Type_Encumbrance"].notna()) &
-     (df_excel_filtered["Type_Encumbrance"] != "")) |
+     (df_excel_filtered["Type_Encumbrance"].astype(str).str.strip().fillna('') != "")) |
     ((df_excel_filtered["Encumbrance_Indicator"] == "encumbered") &
-     ((df_excel_filtered["Type_Encumbrance"].isna()) |
-      (df_excel_filtered["Type_Encumbrance"] == "")))
+     (df_excel_filtered["Type_Encumbrance"].astype(str).str.strip().fillna('') == ""))
 ].copy()
 
 check6_result = "✅ True" if len(invalid_type_encumbrance_rows) == 0 else "❌ False"
@@ -237,8 +253,8 @@ excel_only_rows.append([
 
 # ---------------- Check 7: Country_region must be populated if SAP_ID_Counterparty is empty ----------------
 invalid_country_rows = df_excel_filtered[
-    (df_excel_filtered["SAP_ID_Counterparty"].isna() | (df_excel_filtered["SAP_ID_Counterparty"] == "")) &
-    (df_excel_filtered["Country_region"].isna() | (df_excel_filtered["Country_region"] == ""))
+    (df_excel_filtered["SAP_ID_Counterparty"].isna() | (df_excel_filtered["SAP_ID_Counterparty"].astype(str).str.strip() == "")) &
+    (df_excel_filtered["Country_region"].isna() | (df_excel_filtered["Country_region"].astype(str).str.strip() == ""))
 ].copy()
 
 check7_result = "✅ True" if len(invalid_country_rows) == 0 else "❌ False"
@@ -250,6 +266,16 @@ excel_only_rows.append([
     len(invalid_country_rows)
 ])
 
+# ---------------- Check 8 (PRE-FILTER) Display ----------------
+# The check logic for check8_result and check_date_mismatches was calculated above
+excel_only_rows.append([
+    "Check 8",
+    "Reference_Date column must match REFERENCE_DATE variable (DD.MM.YYYY)",
+    check8_result,
+    len(check_date_mismatches)
+])
+
+# ---------------- Generate Excel-Only Table ----------------
 excel_only_table = tabulate(
     excel_only_rows,
     headers=["Check", "Description", "Result", "Mismatch_Count"],
@@ -258,11 +284,10 @@ excel_only_table = tabulate(
 
 excel_only_details = []
 
-# Table for Exposure Amount mismatches
+# Details for Exposure Amount mismatches
 if not mismatches.empty:
     mismatched_table_rows = []
     for _, row in mismatches.iterrows():
-        # This subtraction now works because both columns are numeric
         diff = row["Exposure_Amt_Original_CCY"] - row["Exposure_Amt_EUR"]
         mismatched_table_rows.append([
             format_id_pair(row["G/L_Account"], row["SAP_ID_Counterparty"]),
@@ -275,10 +300,10 @@ if not mismatches.empty:
         headers=["G/L_Account_SAP_ID", "Original_CCY", "EUR", "Diff"],
         tablefmt="grid"
     )
-    excel_only_details.append("\nMismatched Records (Exposure Amounts):")
+    excel_only_details.append("\nMismatched Records (Exposure Amounts - Check 1):")
     excel_only_details.append(mismatched_table)
 
-# Table for invalid Start_Date records
+# Details for invalid Start_Date records
 if not invalid_start_rows.empty:
     start_table_rows = []
     for _, row in invalid_start_rows.iterrows():
@@ -292,16 +317,16 @@ if not invalid_start_rows.empty:
         headers=["G/L_Account_SAP_ID", "Start_Date", "Reference_Date"],
         tablefmt="grid"
     )
-    excel_only_details.append("\nInvalid Start_Date Records:")
+    excel_only_details.append("\nInvalid Start_Date Records (Check 2):")
     excel_only_details.append(invalid_start_table)
 
-# Table for invalid End_Date records
+# Details for invalid End_Date records
 if not invalid_end_rows.empty:
     end_table_rows = []
     for _, row in invalid_end_rows.iterrows():
         end_table_rows.append([
             format_id_pair(row["G/L_Account"], row["SAP_ID_Counterparty"]),
-            row["End_Date_Parsed"].strftime("%d.%m.%Y"),
+            row["End_Date_Parsed"].strftime("%d.%m.%Y") if pd.notna(row["End_Date_Parsed"]) else "N/A",
             ref_date_dt.strftime("%d.%m.%Y")
         ])
     invalid_end_table = tabulate(
@@ -309,14 +334,14 @@ if not invalid_end_rows.empty:
         headers=["G/L_Account_SAP_ID", "End_Date", "Reference_Date"],
         tablefmt="grid"
     )
-    excel_only_details.append("\nInvalid End_Date Records:")
+    excel_only_details.append("\nInvalid End_Date Records (Check 3):")
     excel_only_details.append(invalid_end_table)
 
-# Table for invalid Maturity_Type / End_Date records
+# Details for invalid Maturity_Type / End_Date records
 if not invalid_maturity_rows.empty:
     maturity_table_rows = []
     for _, row in invalid_maturity_rows.iterrows():
-        end_date_str = row["End_Date_Parsed"].strftime("%d.%m.%Y") if pd.notna(row["End_Date_Parsed"]) else ""
+        end_date_str = row["End_Date_Parsed"].strftime("%d.%m.%Y") if pd.notna(row["End_Date_Parsed"]) else "N/A"
         maturity_table_rows.append([
             format_id_pair(row["G/L_Account"], row["SAP_ID_Counterparty"]),
             row["Maturity_Type"],
@@ -327,10 +352,10 @@ if not invalid_maturity_rows.empty:
         headers=["G/L_Account_SAP_ID", "Maturity_Type", "End_Date"],
         tablefmt="grid"
     )
-    excel_only_details.append("\nInvalid Maturity_Type / End_Date Records:")
+    excel_only_details.append("\nInvalid Maturity_Type / End_Date Records (Check 4):")
     excel_only_details.append(invalid_maturity_table)
 
-# Table for invalid Encumbrance_Indicator records
+# Details for invalid Encumbrance_Indicator records
 if not invalid_encumbrance_rows.empty:
     encumbrance_table_rows = []
     for _, row in invalid_encumbrance_rows.iterrows():
@@ -343,10 +368,10 @@ if not invalid_encumbrance_rows.empty:
         headers=["G/L_Account_SAP_ID", "Encumbrance_Indicator"],
         tablefmt="grid"
     )
-    excel_only_details.append("\nInvalid Encumbrance_Indicator Records:")
+    excel_only_details.append("\nInvalid Encumbrance_Indicator Records (Check 5):")
     excel_only_details.append(invalid_encumbrance_table)
 
-# Table for invalid Type_Encumbrance records
+# Details for invalid Type_Encumbrance records
 if not invalid_type_encumbrance_rows.empty:
     type_encumbrance_table_rows = []
     for _, row in invalid_type_encumbrance_rows.iterrows():
@@ -360,10 +385,10 @@ if not invalid_type_encumbrance_rows.empty:
         headers=["G/L_Account_SAP_ID", "Encumbrance_Indicator", "Type_Encumbrance"],
         tablefmt="grid"
     )
-    excel_only_details.append("\nInvalid Type_Encumbrance Records:")
+    excel_only_details.append("\nInvalid Type_Encumbrance Records (Check 6):")
     excel_only_details.append(invalid_type_encumbrance_table)
 
-# Table for invalid Country_region records
+# Details for invalid Country_region records
 if not invalid_country_rows.empty:
     country_table_rows = []
     for _, row in invalid_country_rows.iterrows():
@@ -376,8 +401,25 @@ if not invalid_country_rows.empty:
         headers=["G/L_Account_SAP_ID", "Country_region"],
         tablefmt="grid"
     )
-    excel_only_details.append("\nInvalid Country_region Records:")
+    excel_only_details.append("\nInvalid Country_region Records (Check 7):")
     excel_only_details.append(invalid_country_table)
+
+# Details for Reference_Date Mismatches (Check 8)
+if not check_date_mismatches.empty:
+    date_mismatch_table_rows = []
+    for _, row in check_date_mismatches.iterrows():
+        date_mismatch_table_rows.append([
+            format_id_pair(row["G/L_Account"], row["SAP_ID_Counterparty"]),
+            row["Reference_Date"],
+            excel_reference_date
+        ])
+    date_mismatch_table = tabulate(
+        date_mismatch_table_rows,
+        headers=["G/L_Account_SAP_ID", "Actual_Reference_Date", "Expected_Reference_Date"],
+        tablefmt="grid"
+    )
+    excel_only_details.append("\nReference_Date Mismatch Records (Check 8):")
+    excel_only_details.append(date_mismatch_table)
 
 # ---------------- INFORMATION TABLE: NON-EUR CURRENCY RECORDS ----------------
 information_header = ["\nInformation Table\n"]
