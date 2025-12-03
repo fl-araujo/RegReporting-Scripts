@@ -8,9 +8,9 @@ from typing import List, Set, Dict, Any
 # ==============================================================================
 
 # --- File Paths ---
-INPUT_TXT_PATH = '02.IT_Reporting/IT_A6/input_files/ISIN_20251031.txt'      # Path to the input .txt file containing 'chiave' column
-INPUT_XLSX_PATH = '02.IT_Reporting/IT_A6/input_files/ISIN request tracker [FEAT].xlsx' # Path to the input .xlsx file containing 'ISIN' column
-OUTPUT_XLSX_PATH = '02.IT_Reporting/IT_A6/input_files/ISIN_Request_List.xlsx' # Path for the final output file
+INPUT_TXT_PATH = '02.IT_Reporting/IT_A6/input_files/ISIN_20251031.txt'      
+INPUT_XLSX_PATH = '02.IT_Reporting/IT_A6/input_files/ISIN request tracker [FEAT].xlsx' 
+OUTPUT_XLSX_PATH = '02.IT_Reporting/IT_A6/input_files/ISIN_Request_List.xlsx' 
 
 # --- Snowflake Parameters ---
 REPORT_DT = '2025-10-31'
@@ -34,7 +34,7 @@ SNOWFLAKE_QUERIES = [
     AND output IS NOT NULL
     """,
     f"""
-    SELECT "REC-INIZIO-RESTO FIELD 6"
+    SELECT "REC-INIZIO-RESTO VALUE 6"
     FROM teams_prd.rmt_sensitive_mart.mrt_snapshot__regulatory_reporting__italy_a6_fto_0162504
     WHERE report_dt = '{REPORT_DT}' AND snapshot_dt = '{SNAPSHOT_DT}'
     AND output IS NOT NULL
