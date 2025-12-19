@@ -160,7 +160,7 @@ def compare_datasets_to_excel(submission_file, excel_file, output_file='output_v
 
 if __name__ == "__main__":
     submission_files = {
-        'riad': 'input_files/rdac_10012345_202503_5071.xml',
+        'riad': 'de/rdac_10012345_202503_5071.xml',
         'ac1m_1': 'input_files/ac1m_10012345_202503_5072_1e.xml',
         'ac1m_2': 'input_files/ac1m_99004014_202503_5075_1e.xml',
         'ac2m_1': 'input_files/ac2m_10012345_202503_5073_1e.xml',
